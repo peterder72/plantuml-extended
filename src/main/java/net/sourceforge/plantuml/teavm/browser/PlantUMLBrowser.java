@@ -152,7 +152,7 @@ public class PlantUMLBrowser {
 	private static final StringBounder STRING_BOUNDER = new StringBounderTeaVM();
 
 	/** Maximum width or height (in pixels) before refusing to render. */
-	private static final int MAX_SVG_SIZE = 4096;
+	private static final int MAX_SVG_SIZE = 8192;
 
 	// =========================================================================
 	// Worker thread synchronization

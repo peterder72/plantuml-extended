@@ -1,0 +1,65 @@
+---
+output: svg
+expected-description: (Autofac lifetime)
+---
+@startautofac
+composition "Module-provisioned request" {
+  module RequestModule {
+    register foo: IFoo -> Foo sharing perScope
+    register fast: ICache key "fast" -> FastCache
+    register slow: ICache key "slow" -> SlowCache
+    register client: IClient via delegate createClient(ctx)
+    decorate IFoo with LoggingFoo
+    decorate IFoo with MetricsFoo
+  }
+  lifetime system root {
+    register bar: IBar -> Bar sharing single
+    register moduleRegistration: RequestModule -> RequestModule sharing single
+  }
+  resolve module1: RequestModule from system
+  expect module1 success {
+    selected system.moduleRegistration
+    instance moduleObject
+    state new
+    owner system
+  }
+  lifetime request from system tag "request" {
+    install module1
+  }
+  resolve foo1: IFoo from request
+  expect foo1 success {
+    selected request.module1.foo
+    instance fooObject
+    state new
+    activation request
+    sharing request
+    owner request
+    chain MetricsFoo -> LoggingFoo -> Foo
+  }
+  resolve bar1: IBar from request
+  expect bar1 success {
+    selected system.bar
+    instance barObject
+    state new
+    activation system
+    sharing system
+    owner system
+  }
+  resolve bar2: IBar from request
+  expect bar2 success { instance barObject; state reused; owner system }
+  resolve fast1: ICache key "fast" from request
+  expect fast1 success { selected request.module1.fast }
+  resolve client1: IClient from request
+  expect client1 failure activationFailure {
+    selected request.module1.client
+    path IClient -> delegate -> IConnection
+    cause "missingRegistration(IConnection)"
+  }
+  resolve bad: ICache key "archive" from request
+  expect bad failure missingRegistration
+  dispose request
+  expand foo1 trace
+  expand bar1 trace
+  view diagnostics
+}
+@endautofac

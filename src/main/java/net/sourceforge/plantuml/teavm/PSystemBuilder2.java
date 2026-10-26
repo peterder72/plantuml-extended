@@ -67,6 +67,7 @@ import net.sourceforge.plantuml.mindmap.MindMapDiagramFactory;
 import net.sourceforge.plantuml.nio.PathSystem;
 import net.sourceforge.plantuml.nwdiag.NwDiagramFactory;
 import net.sourceforge.plantuml.packetdiag.PacketDiagramFactory;
+import net.sourceforge.plantuml.autofac.AutofacDiagramFactory;
 import net.sourceforge.plantuml.preproc.Defines;
 import net.sourceforge.plantuml.preproc.PreprocessingArtifact;
 import net.sourceforge.plantuml.regexdiagram.PSystemRegexFactory;
@@ -109,6 +110,7 @@ public class PSystemBuilder2 {
 		factories.add(new TimingDiagramFactory());
 		factories.add(new ChartDiagramFactory());
 		factories.add(new PacketDiagramFactory());
+		factories.add(new AutofacDiagramFactory());
 		factories.add(new JsonDiagramFactory());
 		factories.add(new YamlDiagramFactory());
 		factories.add(new PSystemEbnfFactory());

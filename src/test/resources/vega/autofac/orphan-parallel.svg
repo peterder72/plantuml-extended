@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="AUTOFAC" height="1491px" preserveAspectRatio="none" style="width:1520px;height:1491px;background:#FFFFFF;" version="1.1" viewBox="0 0 1520 1491" width="1520px" zoomAndPan="magnify">
+  <defs/>
+  <g font-family="sans-serif" lengthAdjust="spacing">
+    <g class="title">
+      <text fill="#000" font-size="14" font-weight="700" textLength="246.663" x="635.713" y="30.889">Independent lifetime ends and partial order</text>
+    </g>
+    <rect fill="#FFC" height="35" rx="2.5" ry="2.5" style="stroke:#FD8;stroke-width:3;" width="1489.088" x="13" y="48"/>
+    <text fill="#000" font-family="monospace" font-size="10" textLength="339.812" x="20" y="57">undisposedChild: Child lifetime 'requestA' remains open when 'system' is disposed</text>
+    <text fill="#000" font-family="monospace" font-size="10" textLength="339.812" x="20" y="77">undisposedChild: Child lifetime 'requestB' remains open when 'system' is disposed</text>
+    <text fill="#000" font-size="14" textLength="125.3" x="50" y="107">Logical event order →</text>
+    <g class="autofac-scope" data-source-line="2" id="af-scope-system">
+      <rect fill="#F8FAFC" height="148" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="515.575" x="50" y="229"/>
+      <line style="stroke:#94A3B8;stroke-width:2;" x1="192.15" x2="565.575" y1="345" y2="345"/>
+    </g>
+    <g class="autofac-scope" data-source-line="4" id="af-scope-requestA">
+      <rect fill="#F8FAFC" height="306" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="761.913" x="216.15" y="434"/>
+      <line style="stroke:#94A3B8;stroke-width:2;" x1="358.3" x2="978.063" y1="584" y2="584"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="30" y1="369" y2="442"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="216.15" y1="442" y2="442"/>
+    </g>
+    <g class="autofac-scope" data-source-line="5" id="af-scope-requestB">
+      <rect fill="#F8FAFC" height="165" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="983.425" x="216.15" y="797"/>
+      <line style="stroke:#94A3B8;stroke-width:2;" x1="358.3" x2="1199.575" y1="930" y2="930"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="30" y1="369" y2="805"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="216.15" y1="805" y2="805"/>
+    </g>
+    <g class="autofac-construction" data-source-line="2" id="af-construction-system">
+      <rect fill="#E2E8F0" height="132" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="142.15" x="50" y="229"/>
+      <g class="autofac-event" data-source-line="2" id="af-event-birth-system">
+        <text fill="#000" font-size="14" textLength="44.275" x="66" y="259">system</text>
+      </g>
+      <g class="autofac-construction" data-source-line="2" id="af-empty-system">
+        <text fill="#000" font-size="14" textLength="94.15" x="78" y="292">No registrations</text>
+      </g>
+    </g>
+    <g class="autofac-construction" data-source-line="4" id="af-construction-requestA">
+      <rect fill="#E2E8F0" height="290" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="142.15" x="216.15" y="434"/>
+      <g class="autofac-event" data-source-line="4" id="af-event-birth-requestA">
+        <text fill="#000" font-size="14" textLength="56" x="232.15" y="464">requestA</text>
+        <text fill="#000" font-size="14" textLength="84.788" x="232.15" y="481">child of system</text>
+      </g>
+      <g class="autofac-construction" data-source-line="4" id="af-empty-requestA">
+        <text fill="#000" font-size="14" textLength="94.15" x="244.15" y="514">No registrations</text>
+      </g>
+    </g>
+    <g class="autofac-construction" data-source-line="5" id="af-construction-requestB">
+      <rect fill="#E2E8F0" height="149" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="142.15" x="216.15" y="797"/>
+      <g class="autofac-event" data-source-line="5" id="af-event-birth-requestB">
+        <text fill="#000" font-size="14" textLength="56" x="232.15" y="827">requestB</text>
+        <text fill="#000" font-size="14" textLength="84.788" x="232.15" y="844">child of system</text>
+      </g>
+      <g class="autofac-construction" data-source-line="5" id="af-empty-requestB">
+        <text fill="#000" font-size="14" textLength="94.15" x="244.15" y="877">No registrations</text>
+      </g>
+    </g>
+    <g class="autofac-unordered" data-source-line="4" id="af-unordered-parallel-1">
+      <rect fill="none" height="545" rx="6" ry="6" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;" width="162.15" x="206.15" y="409"/>
+      <text fill="#000" font-size="14" textLength="63.787" x="214.15" y="425">unordered</text>
+    </g>
+    <g class="autofac-unordered" data-source-line="8" id="af-unordered-parallel-2">
+      <rect fill="none" height="466" rx="6" ry="6" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;" width="179.275" x="372.3" y="488"/>
+      <text fill="#000" font-size="14" textLength="63.787" x="380.3" y="504">unordered</text>
+    </g>
+    <g class="autofac-event" data-source-line="8" id="af-event-a">
+      <ellipse cx="382.3" cy="584" fill="#F8FAFC" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="135.275" x="394.3" y="535">a: resolve IService from</text>
+      <text fill="#000" font-size="14" textLength="56" x="394.3" y="552">requestA</text>
+      <text fill="#000" font-size="14" textLength="70.875" x="394.3" y="569">unspecified</text>
+    </g>
+    <g class="autofac-event" data-source-line="9" id="af-event-b">
+      <ellipse cx="382.3" cy="930" fill="#F8FAFC" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="135.275" x="394.3" y="881">b: resolve IService from</text>
+      <text fill="#000" font-size="14" textLength="56" x="394.3" y="898">requestB</text>
+      <text fill="#000" font-size="14" textLength="70.875" x="394.3" y="915">unspecified</text>
+    </g>
+    <g class="autofac-event" data-source-line="10" id="af-event-c">
+      <line style="stroke:#94A3B8;stroke-width:1.5;" x1="370.3" x2="529.15" y1="708" y2="708"/>
+      <ellipse cx="382.3" cy="708" fill="#F8FAFC" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="122.85" x="394.3" y="659">c: resolve IClock from</text>
+      <text fill="#000" font-size="14" textLength="56" x="394.3" y="676">requestA</text>
+      <text fill="#000" font-size="14" textLength="70.875" x="394.3" y="693">unspecified</text>
+    </g>
+    <g class="autofac-event" data-source-line="12" id="af-event-dispose-system-1">
+      <line style="stroke:#B45309;stroke-width:2;" x1="559.575" x2="565.575" y1="354" y2="336"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="566.575" x2="572.575" y1="354" y2="336"/>
+      <text fill="#000" font-size="14" textLength="161.788" x="577.575" y="296">dispose-system-1: dispose</text>
+      <text fill="#000" font-size="14" textLength="44.275" x="577.575" y="313">system</text>
+      <text fill="#000" font-size="14" textLength="101.238" x="577.575" y="330">terminal disposal</text>
+    </g>
+    <g class="autofac-event" data-source-line="13" id="af-event-later">
+      <ellipse cx="775.363" cy="584" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
+      <g class="autofac-instance" data-source-line="13" id="af-instance-surviving-later">
+        <text fill="#000" font-size="14" textLength="154.7" x="787.363" y="518">later: resolve IService from</text>
+        <text fill="#000" font-size="14" textLength="56" x="787.363" y="535">requestA</text>
+        <text fill="#000" font-size="14" textLength="80.938" x="787.363" y="552">success · new</text>
+        <text fill="#000" font-size="14" textLength="92.663" x="787.363" y="569">object surviving</text>
+      </g>
+    </g>
+    <g class="autofac-event" data-source-line="15" id="af-event-dispose-requestA-1">
+      <line style="stroke:#B45309;stroke-width:2;" x1="972.063" x2="978.063" y1="593" y2="575"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="979.063" x2="985.063" y1="593" y2="575"/>
+      <text fill="#000" font-size="14" textLength="173.513" x="990.063" y="535">dispose-requestA-1: dispose</text>
+      <text fill="#000" font-size="14" textLength="56" x="990.063" y="552">requestA</text>
+      <text fill="#000" font-size="14" textLength="101.238" x="990.063" y="569">terminal disposal</text>
+    </g>
+    <g class="autofac-event" data-source-line="16" id="af-event-dispose-requestB-1">
+      <line style="stroke:#B45309;stroke-width:2;" x1="1193.575" x2="1199.575" y1="939" y2="921"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="1200.575" x2="1206.575" y1="939" y2="921"/>
+      <text fill="#000" font-size="14" textLength="173.513" x="1211.575" y="881">dispose-requestB-1: dispose</text>
+      <text fill="#000" font-size="14" textLength="56" x="1211.575" y="898">requestB</text>
+      <text fill="#000" font-size="14" textLength="101.238" x="1211.575" y="915">terminal disposal</text>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="13" id="af-diagnostic-later">
+      <rect fill="#F8FAFC" height="185" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="242.7" x="50" y="1043"/>
+      <text fill="#000" font-size="14" textLength="210.7" x="66" y="1073">later: resolve IService from requestA</text>
+      <text fill="#000" font-size="14" textLength="108.063" x="66" y="1090">outcome: success</text>
+      <text fill="#000" font-size="14" textLength="196.088" x="66" y="1107">selected registration: unspecified</text>
+      <text fill="#000" font-size="14" textLength="127.575" x="66" y="1124">activator: unspecified</text>
+      <text fill="#000" font-size="14" textLength="133.875" x="66" y="1141">activation: unspecified</text>
+      <text fill="#000" font-size="14" textLength="158.025" x="66" y="1158">sharing scope: unspecified</text>
+      <text fill="#000" font-size="14" textLength="98" x="66" y="1175">owner: requestA</text>
+      <text fill="#000" font-size="14" textLength="175.788" x="66" y="1192">instance: surviving · state: new</text>
+      <text fill="#000" font-size="14" textLength="125.3" x="66" y="1209">confidence: declared</text>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="12" id="af-diagnostic-warning-dispose-system-1-1">
+      <rect fill="#FEF3C7" height="49" rx="6" ry="6" style="stroke:#92400E;stroke-width:1.5;" width="507.737" x="50" y="1252"/>
+      <text fill="#92400E" font-size="14" textLength="475.737" x="66" y="1282">undisposedChild: Child lifetime 'requestA' remains open when 'system' is disposed</text>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="12" id="af-diagnostic-warning-dispose-system-1-2">
+      <rect fill="#FEF3C7" height="49" rx="6" ry="6" style="stroke:#92400E;stroke-width:1.5;" width="507.737" x="50" y="1325"/>
+      <text fill="#92400E" font-size="14" textLength="475.737" x="66" y="1355">undisposedChild: Child lifetime 'requestB' remains open when 'system' is disposed</text>
+    </g>
+    <g class="autofac-legend" id="af-legend">
+      <text fill="#000" font-size="14" textLength="407.925" x="50" y="1412">□ registration   ○ unspecified request   ● declared success   ↶ reused object</text>
+      <text fill="#000" font-size="14" textLength="375.9" x="50" y="1429">× declared failure   // disposal   ↩ finite authored cycle   ⇢ open lifetime</text>
+    </g>
+  </g>
+</svg>

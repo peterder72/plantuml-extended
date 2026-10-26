@@ -1,0 +1,35 @@
+@startautofac
+' Installation uses a resolved module object, not the module definition itself.
+' Installed registration identities retain the target scope and module alias.
+composition "Module object -> request construction" {
+	module OrdersModule {
+		register orders: IOrders -> Orders sharing perScope ownership scope
+	}
+	lifetime system root {
+		register module: OrdersModule -> OrdersModule sharing single ownership scope
+	}
+	resolve module1: OrdersModule from system
+	expect module1 success {
+		selected system.module
+		instance moduleObj
+		state new
+		activation system
+		sharing system
+		owner system
+	}
+	lifetime request from system {
+		install module1
+	}
+	resolve orders: IOrders from request
+	expect orders success {
+		selected request.module1.orders
+		instance ordersObj
+		state new
+		activation request
+		sharing request
+		owner request
+	}
+	dispose request
+	expand orders trace
+}
+@endautofac

@@ -53,6 +53,7 @@ public class LanguageDescriptor {
 
 	public LanguageDescriptor() {
 
+		addDirectivePair("autofac");
 		addDirectivePair("board");
 		addDirectivePair("bpm");
 		addDirectivePair("chart");
@@ -137,6 +138,11 @@ public class LanguageDescriptor {
 		type.add("struct");
 		type.add("usecase");
 		type.add("packetdiag");
+
+		for (String word : new String[] { "composition", "lifetime", "module", "register", "install", "decorate",
+				"resolve", "depends", "invoke", "evaluate", "dispose", "expect", "sharing", "ownership", "ownedBy",
+				"selected", "activation", "reused", "confidence", "expand", "diagnostics" })
+			keyword.add(word);
 
 		keyword.add("across");
 		keyword.add("activate");

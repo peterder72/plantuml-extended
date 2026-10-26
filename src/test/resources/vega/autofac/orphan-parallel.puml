@@ -1,0 +1,24 @@
+---
+output: svg
+expected-description: (Autofac lifetime)
+---
+@startautofac
+composition "Independent lifetime ends and partial order" {
+  lifetime system root { }
+  parallel {
+    lifetime requestA from system { }
+    lifetime requestB from system { }
+  }
+  parallel {
+    resolve a: IService from requestA
+    resolve b: IService from requestB
+    resolve c: IClock from requestA
+  }
+  dispose system
+  resolve later: IService from requestA
+  expect later success { instance surviving; state new; owner requestA }
+  dispose requestA
+  dispose requestB
+  expand later
+}
+@endautofac

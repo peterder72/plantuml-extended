@@ -1,0 +1,232 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="AUTOFAC" height="2087px" preserveAspectRatio="none" style="width:2428px;height:2087px;background:#FFFFFF;" version="1.1" viewBox="0 0 2428 2087" width="2428px" zoomAndPan="magnify">
+  <defs/>
+  <g font-family="sans-serif" lengthAdjust="spacing">
+    <g class="title">
+      <text fill="#000" font-size="14" font-weight="700" textLength="168.875" x="1128.588" y="30.889">Module-provisioned request</text>
+    </g>
+    <text fill="#000" font-size="14" textLength="125.3" x="50" y="67">Logical event order →</text>
+    <g class="autofac-scope" data-source-line="10" id="af-scope-system">
+      <path d="M2369.05,331 L62,331 C50,331 50,331 50,343 L50,917 C50,929 50,929 62,929 L2369.05,929" fill="#F8FAFC" style="stroke:#94A3B8;stroke-width:1.5;"/>
+      <line style="stroke:#94A3B8;stroke-width:2;" x1="432.687" x2="2369.05" y1="480" y2="480"/>
+      <polygon fill="#94A3B8" points="2369.05,480,2361.05,484,2361.05,476" style="stroke:#94A3B8;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+    </g>
+    <g class="autofac-scope" data-source-line="21" id="af-scope-request">
+      <rect fill="#F8FAFC" height="377" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="1441.938" x="674.963" y="536"/>
+      <line style="stroke:#94A3B8;stroke-width:2;" x1="944.075" x2="2116.9" y1="881" y2="881"/>
+    </g>
+    <g class="autofac-construction" data-source-line="10" id="af-construction-system">
+      <rect fill="#E2E8F0" height="165" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="382.687" x="50" y="331"/>
+      <g class="autofac-event" data-source-line="10" id="af-event-birth-system">
+        <text fill="#000" font-size="14" textLength="44.275" x="66" y="361">system</text>
+      </g>
+      <g class="autofac-registration" data-source-line="11" id="af-reg-system.bar">
+        <rect fill="none" height="8" style="stroke:#94A3B8;stroke-width:2;" width="8" x="62" y="385"/>
+        <text fill="#000" font-size="14" textLength="85.487" x="78" y="394">bar: IBar → Bar</text>
+        <text fill="#000" font-size="14" textLength="82.6" x="78" y="411">sharing single</text>
+      </g>
+      <g class="autofac-registration" data-source-line="12" id="af-reg-system.moduleRegistration">
+        <rect fill="none" height="8" style="stroke:#94A3B8;stroke-width:2;" width="8" x="62" y="431"/>
+        <text fill="#000" font-size="14" textLength="334.687" x="78" y="440">moduleRegistration: RequestModule → RequestModule</text>
+        <text fill="#000" font-size="14" textLength="82.6" x="78" y="457">sharing single</text>
+      </g>
+    </g>
+    <g class="autofac-construction" data-source-line="21" id="af-construction-request">
+      <rect fill="#E2E8F0" height="361" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="269.113" x="674.963" y="536"/>
+      <g class="autofac-event" data-source-line="21" id="af-event-birth-request">
+        <text fill="#000" font-size="14" textLength="130.375" x="690.963" y="566">request [tag "request"]</text>
+        <text fill="#000" font-size="14" textLength="84.788" x="690.963" y="583">child of system</text>
+      </g>
+      <g class="autofac-construction" data-source-line="22" id="af-install-request-module1">
+        <text fill="#000" font-size="14" textLength="89.6" x="702.963" y="616">install module1</text>
+      </g>
+      <g class="autofac-registration" data-source-line="3" id="af-reg-request.module1.foo">
+        <rect fill="none" height="8" style="stroke:#94A3B8;stroke-width:2;" width="8" x="686.963" y="636"/>
+        <text fill="#000" font-size="14" textLength="89.425" x="702.963" y="645">foo: IFoo → Foo</text>
+        <text fill="#000" font-size="14" textLength="105.875" x="702.963" y="662">sharing perScope</text>
+      </g>
+      <g class="autofac-registration" data-source-line="4" id="af-reg-request.module1.fast">
+        <rect fill="none" height="8" style="stroke:#94A3B8;stroke-width:2;" width="8" x="686.963" y="682"/>
+        <text fill="#000" font-size="14" textLength="206.675" x="702.963" y="691">fast: ICache key "fast" → FastCache</text>
+      </g>
+      <g class="autofac-registration" data-source-line="5" id="af-reg-request.module1.slow">
+        <rect fill="none" height="8" style="stroke:#94A3B8;stroke-width:2;" width="8" x="686.963" y="711"/>
+        <text fill="#000" font-size="14" textLength="221.113" x="702.963" y="720">slow: ICache key "slow" → SlowCache</text>
+      </g>
+      <g class="autofac-registration" data-source-line="6" id="af-reg-request.module1.client">
+        <rect fill="none" height="8" style="stroke:#94A3B8;stroke-width:2;" width="8" x="686.963" y="740"/>
+        <text fill="#000" font-size="14" textLength="76.3" x="702.963" y="749">client: IClient</text>
+        <text fill="#000" font-size="14" textLength="173.513" x="702.963" y="766">via delegate createClient(ctx)</text>
+      </g>
+      <g class="autofac-construction" data-source-line="7" id="af-decorator-request.module1.5">
+        <text fill="#000" font-size="14" textLength="82.425" x="702.963" y="795">decorate IFoo</text>
+        <text fill="#000" font-size="14" textLength="98.963" x="702.963" y="812">with LoggingFoo</text>
+      </g>
+      <g class="autofac-construction" data-source-line="8" id="af-decorator-request.module1.6">
+        <text fill="#000" font-size="14" textLength="82.425" x="702.963" y="841">decorate IFoo</text>
+        <text fill="#000" font-size="14" textLength="94.15" x="702.963" y="858">with MetricsFoo</text>
+      </g>
+    </g>
+    <g class="autofac-provenance" data-source-line="22" id="af-provenance-request-module1">
+      <path d="M456.687,480 L456.687,122 C456.687,114 456.687,114 464.687,114 L952.075,114 C944.075,114 944.075,114 944.075,122 L944.075,610.5" fill="none" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;"/>
+      <polygon fill="#0F766E" points="944.075,610.5,940.075,602.5,948.075,602.5" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="235.725" x="468.687" y="109">module module1 → request construction</text>
+    </g>
+    <g class="autofac-lookup" data-source-line="14" id="af-lookup-module1">
+      <path d="M456.687,480 L456.687,151 C456.687,143 456.687,143 464.687,143 L440.687,143 C432.687,143 432.687,143 432.687,151 L432.687,443" fill="none" style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:1,4;"/>
+      <polygon fill="#94A3B8" points="432.687,443,428.687,435,436.687,435" style="stroke:#94A3B8;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="121.363" x="444.687" y="138">selected registration</text>
+    </g>
+    <g class="autofac-lookup" data-source-line="24" id="af-lookup-foo1">
+      <path d="M968.075,881 L968.075,180 C968.075,172 968.075,172 976.075,172 L952.075,172 C944.075,172 944.075,172 944.075,180 L944.075,648" fill="none" style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:1,4;"/>
+      <polygon fill="#94A3B8" points="944.075,648,940.075,640,948.075,640" style="stroke:#94A3B8;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="121.363" x="956.075" y="167">selected registration</text>
+    </g>
+    <g class="autofac-lookup" data-source-line="34" id="af-lookup-bar1">
+      <path d="M1148.2,881 L1148.2,209 C1148.2,201 1148.2,201 1156.2,201 L440.687,201 C432.687,201 432.687,201 432.687,209 L432.687,397" fill="none" style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:1,4;"/>
+      <polygon fill="#94A3B8" points="432.687,397,428.687,389,436.687,389" style="stroke:#94A3B8;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="121.363" x="444.687" y="196">selected registration</text>
+    </g>
+    <g class="autofac-lookup" data-source-line="45" id="af-lookup-fast1">
+      <path d="M1505.3,881 L1505.3,238 C1505.3,230 1505.3,230 1513.3,230 L952.075,230 C944.075,230 944.075,230 944.075,238 L944.075,685.5" fill="none" style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:1,4;"/>
+      <polygon fill="#94A3B8" points="944.075,685.5,940.075,677.5,948.075,677.5" style="stroke:#94A3B8;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="121.363" x="956.075" y="225">selected registration</text>
+    </g>
+    <g class="autofac-lookup" data-source-line="47" id="af-lookup-client1">
+      <path d="M1698.725,881 L1698.725,267 C1698.725,259 1698.725,259 1706.725,259 L952.075,259 C944.075,259 944.075,259 944.075,267 L944.075,752" fill="none" style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:1,4;"/>
+      <polygon fill="#94A3B8" points="944.075,752,940.075,744,948.075,744" style="stroke:#94A3B8;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="121.363" x="956.075" y="254">selected registration</text>
+    </g>
+    <g class="autofac-event" data-source-line="14" id="af-event-module1">
+      <ellipse cx="456.687" cy="480" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
+      <g class="autofac-instance" data-source-line="14" id="af-instance-moduleObject-module1">
+        <text fill="#000" font-size="14" textLength="102.725" x="468.687" y="414">module1: resolve</text>
+        <text fill="#000" font-size="14" textLength="170.275" x="468.687" y="431">RequestModule from system</text>
+        <text fill="#000" font-size="14" textLength="80.938" x="468.687" y="448">success · new</text>
+        <text fill="#000" font-size="14" textLength="123.725" x="468.687" y="465">object moduleObject</text>
+      </g>
+    </g>
+    <g class="autofac-event" data-source-line="24" id="af-event-foo1">
+      <ellipse cx="968.075" cy="881" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
+      <g class="autofac-instance" data-source-line="24" id="af-instance-fooObject-foo1">
+        <text fill="#000" font-size="14" textLength="132.125" x="980.075" y="815">foo1: resolve IFoo from</text>
+        <text fill="#000" font-size="14" textLength="46.637" x="980.075" y="832">request</text>
+        <text fill="#000" font-size="14" textLength="80.938" x="980.075" y="849">success · new</text>
+        <text fill="#000" font-size="14" textLength="97.213" x="980.075" y="866">object fooObject</text>
+      </g>
+    </g>
+    <g class="autofac-event" data-source-line="34" id="af-event-bar1">
+      <ellipse cx="1148.2" cy="881" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
+      <g class="autofac-instance" data-source-line="34" id="af-instance-barObject-bar1">
+        <text fill="#000" font-size="14" textLength="130.55" x="1160.2" y="815">bar1: resolve IBar from</text>
+        <text fill="#000" font-size="14" textLength="46.637" x="1160.2" y="832">request</text>
+        <text fill="#000" font-size="14" textLength="80.938" x="1160.2" y="849">success · new</text>
+        <text fill="#000" font-size="14" textLength="98" x="1160.2" y="866">object barObject</text>
+      </g>
+    </g>
+    <g class="autofac-event" data-source-line="43" id="af-event-bar2">
+      <ellipse cx="1326.75" cy="881" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
+      <path d="M1350.75,893 C1350.75,913 1316.75,913 1316.75,893" fill="none" style="stroke:#047857;stroke-width:2;"/>
+      <line style="stroke:#047857;stroke-width:2;" x1="1316.75" x2="1313.75" y1="893" y2="900"/>
+      <line style="stroke:#047857;stroke-width:2;" x1="1316.75" x2="1322.75" y1="893" y2="897"/>
+      <g class="autofac-instance" data-source-line="43" id="af-instance-barObject-bar2">
+        <text fill="#000" font-size="14" textLength="130.55" x="1338.75" y="815">bar2: resolve IBar from</text>
+        <text fill="#000" font-size="14" textLength="46.637" x="1338.75" y="832">request</text>
+        <text fill="#000" font-size="14" textLength="98" x="1338.75" y="849">success · reused</text>
+        <text fill="#000" font-size="14" textLength="98" x="1338.75" y="866">object barObject</text>
+      </g>
+    </g>
+    <g class="autofac-event" data-source-line="45" id="af-event-fast1">
+      <ellipse cx="1505.3" cy="881" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="145.425" x="1517.3" y="832">fast1: resolve ICache key</text>
+      <text fill="#000" font-size="14" textLength="107.013" x="1517.3" y="849">"fast" from request</text>
+      <text fill="#000" font-size="14" textLength="50.575" x="1517.3" y="866">success</text>
+    </g>
+    <g class="autofac-event" data-source-line="47" id="af-event-client1">
+      <line style="stroke:#B91C1C;stroke-width:2;" x1="1692.725" x2="1704.725" y1="875" y2="887"/>
+      <line style="stroke:#B91C1C;stroke-width:2;" x1="1692.725" x2="1704.725" y1="887" y2="875"/>
+      <text fill="#B91C1C" font-size="14" textLength="157.15" x="1710.725" y="832">client1: resolve IClient from</text>
+      <text fill="#B91C1C" font-size="14" textLength="46.637" x="1710.725" y="849">request</text>
+      <text fill="#B91C1C" font-size="14" textLength="144.813" x="1710.725" y="866">failure · activationFailure</text>
+    </g>
+    <g class="autofac-event" data-source-line="53" id="af-event-bad">
+      <line style="stroke:#B91C1C;stroke-width:2;" x1="1897.875" x2="1909.875" y1="875" y2="887"/>
+      <line style="stroke:#B91C1C;stroke-width:2;" x1="1897.875" x2="1909.875" y1="887" y2="875"/>
+      <text fill="#B91C1C" font-size="14" textLength="138.513" x="1915.875" y="832">bad: resolve ICache key</text>
+      <text fill="#B91C1C" font-size="14" textLength="129.675" x="1915.875" y="849">"archive" from request</text>
+      <text fill="#B91C1C" font-size="14" textLength="165.025" x="1915.875" y="866">failure · missingRegistration</text>
+    </g>
+    <g class="autofac-event" data-source-line="55" id="af-event-dispose-request-1">
+      <line style="stroke:#B45309;stroke-width:2;" x1="2110.9" x2="2116.9" y1="890" y2="872"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="2117.9" x2="2123.9" y1="890" y2="872"/>
+      <text fill="#000" font-size="14" textLength="164.15" x="2128.9" y="832">dispose-request-1: dispose</text>
+      <text fill="#000" font-size="14" textLength="46.637" x="2128.9" y="849">request</text>
+      <text fill="#000" font-size="14" textLength="101.238" x="2128.9" y="866">terminal disposal</text>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="24" id="af-diagnostic-foo1">
+      <rect fill="#F8FAFC" height="332" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="284.7" x="50" y="977"/>
+      <text fill="#000" font-size="14" textLength="178.763" x="66" y="1007">foo1: resolve IFoo from request</text>
+      <text fill="#000" font-size="14" textLength="108.063" x="66" y="1024">outcome: success</text>
+      <text fill="#000" font-size="14" textLength="252.7" x="66" y="1041">selected registration: request.module1.foo</text>
+      <text fill="#000" font-size="14" textLength="107.275" x="66" y="1058">activator: type Foo</text>
+      <text fill="#000" font-size="14" textLength="109.638" x="66" y="1075">activation: request</text>
+      <text fill="#000" font-size="14" textLength="133.788" x="66" y="1092">sharing scope: request</text>
+      <text fill="#000" font-size="14" textLength="88.638" x="66" y="1109">owner: request</text>
+      <text fill="#000" font-size="14" textLength="180.338" x="66" y="1126">instance: fooObject · state: new</text>
+      <text fill="#000" font-size="14" textLength="125.3" x="66" y="1143">confidence: declared</text>
+      <g class="autofac-instance" data-source-line="24" id="af-instance-foo1-decorator-0">
+        <rect fill="none" height="139" rx="3" ry="3" style="stroke:#047857;stroke-width:2;" width="252.7" x="66" y="1162"/>
+        <text fill="#000" font-size="14" textLength="69.213" x="82" y="1184">MetricsFoo</text>
+      </g>
+      <g class="autofac-instance" data-source-line="24" id="af-instance-foo1-decorator-1">
+        <rect fill="none" height="90" rx="3" ry="3" style="stroke:#047857;stroke-width:2;" width="220.7" x="82" y="1211"/>
+        <text fill="#000" font-size="14" textLength="74.025" x="98" y="1233">LoggingFoo</text>
+      </g>
+      <g class="autofac-instance" data-source-line="24" id="af-instance-foo1-decorator-2">
+        <rect fill="none" height="41" rx="3" ry="3" style="stroke:#047857;stroke-width:2;" width="188.7" x="98" y="1260"/>
+        <text fill="#000" font-size="14" textLength="24.15" x="114" y="1282">Foo</text>
+      </g>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="34" id="af-diagnostic-bar1">
+      <rect fill="#F8FAFC" height="185" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="225.55" x="50" y="1333"/>
+      <text fill="#000" font-size="14" textLength="177.188" x="66" y="1363">bar1: resolve IBar from request</text>
+      <text fill="#000" font-size="14" textLength="108.063" x="66" y="1380">outcome: success</text>
+      <text fill="#000" font-size="14" textLength="193.55" x="66" y="1397">selected registration: system.bar</text>
+      <text fill="#000" font-size="14" textLength="104.913" x="66" y="1414">activator: type Bar</text>
+      <text fill="#000" font-size="14" textLength="107.275" x="66" y="1431">activation: system</text>
+      <text fill="#000" font-size="14" textLength="131.425" x="66" y="1448">sharing scope: system</text>
+      <text fill="#000" font-size="14" textLength="86.275" x="66" y="1465">owner: system</text>
+      <text fill="#000" font-size="14" textLength="181.125" x="66" y="1482">instance: barObject · state: new</text>
+      <text fill="#000" font-size="14" textLength="125.3" x="66" y="1499">confidence: declared</text>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="47" id="af-diagnostic-client1">
+      <rect fill="#FEE2E2" height="219" rx="6" ry="6" style="stroke:#B91C1C;stroke-width:2;" width="298" x="50" y="1542"/>
+      <text fill="#B91C1C" font-size="14" textLength="203.788" x="66" y="1572">client1: resolve IClient from request</text>
+      <text fill="#B91C1C" font-size="14" textLength="202.3" x="66" y="1589">outcome: failure · activationFailure</text>
+      <text fill="#B91C1C" font-size="14" textLength="266" x="66" y="1606">selected registration: request.module1.client</text>
+      <text fill="#B91C1C" font-size="14" textLength="212.275" x="66" y="1623">activator: delegate createClient(ctx)</text>
+      <text fill="#B91C1C" font-size="14" textLength="133.875" x="66" y="1640">activation: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="158.025" x="66" y="1657">sharing scope: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="112.875" x="66" y="1674">owner: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="236.513" x="66" y="1691">instance: unspecified · state: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="125.3" x="66" y="1708">confidence: declared</text>
+      <text fill="#B91C1C" font-size="14" textLength="247.45" x="66" y="1725">cause: missingRegistration(IConnection)</text>
+      <text fill="#B91C1C" font-size="14" textLength="227.238" x="66" y="1742">path: IClient → delegate → IConnection</text>
+    </g>
+    <g class="autofac-diagnostic" data-source-line="53" id="af-diagnostic-bad">
+      <rect fill="#FEE2E2" height="185" rx="6" ry="6" style="stroke:#B91C1C;stroke-width:2;" width="300.187" x="50" y="1785"/>
+      <text fill="#B91C1C" font-size="14" textLength="268.187" x="66" y="1815">bad: resolve ICache key "archive" from request</text>
+      <text fill="#B91C1C" font-size="14" textLength="222.513" x="66" y="1832">outcome: failure · missingRegistration</text>
+      <text fill="#B91C1C" font-size="14" textLength="196.088" x="66" y="1849">selected registration: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="127.575" x="66" y="1866">activator: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="133.875" x="66" y="1883">activation: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="158.025" x="66" y="1900">sharing scope: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="112.875" x="66" y="1917">owner: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="236.513" x="66" y="1934">instance: unspecified · state: unspecified</text>
+      <text fill="#B91C1C" font-size="14" textLength="125.3" x="66" y="1951">confidence: declared</text>
+    </g>
+    <g class="autofac-legend" id="af-legend">
+      <text fill="#000" font-size="14" textLength="407.925" x="50" y="2008">□ registration   ○ unspecified request   ● declared success   ↶ reused object</text>
+      <text fill="#000" font-size="14" textLength="375.9" x="50" y="2025">× declared failure   // disposal   ↩ finite authored cycle   ⇢ open lifetime</text>
+    </g>
+  </g>
+</svg>

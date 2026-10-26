@@ -283,6 +283,10 @@ public class EmbeddedDiagram extends TextBlockMemoized implements Line, Atom {
 
 		// Dispatch on first char to avoid scanning every keyword
 		switch (cs.charAt(p)) {
+		case 'a':
+			if (match(cs, p, end, "autofac"))
+				return "autofac";
+			break;
 		case 'b':
 			if (match(cs, p, end, "board"))
 				return "board";

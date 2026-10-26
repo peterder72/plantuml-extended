@@ -1,0 +1,49 @@
+@startautofac
+' Origin, selected registration, activation, sharing and owner are distinct facts.
+' The child logger override and root clock reuse are explicitly declared.
+composition "02 - A child override does not move the root singleton" {
+	lifetime system root {
+		register clock: IClock -> SystemClock sharing single
+		register logger: ILogger -> ConsoleLogger sharing single
+	}
+	resolve rootLog: ILogger from system
+	expect rootLog success {
+		selected system.logger
+		instance console
+		state new
+		owner system
+	}
+
+	lifetime request from system {
+		register logger: ILogger -> RequestLogger sharing perScope
+	}
+	resolve localLog: ILogger from request
+	expect localLog success {
+		selected request.logger
+		instance requestLog
+		state new
+		activation request
+		sharing request
+		owner request
+	}
+	resolve clockA: IClock from request
+	expect clockA success {
+		selected system.clock
+		instance sharedClock
+		state new
+		activation system
+		sharing system
+		owner system
+	}
+	resolve clockB: IClock from request
+	expect clockB success {
+		instance sharedClock
+		state reused
+		owner system
+	}
+
+	dispose request
+	expand localLog trace
+	expand clockA trace
+}
+@endautofac

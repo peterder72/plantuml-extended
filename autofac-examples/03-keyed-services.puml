@@ -1,0 +1,26 @@
+@startautofac
+' Service identity includes the key; name preserves its authored display spelling.
+' The missing key is an authored failure, not a registration-lookup prediction.
+composition "03 - Fast, durable and missing cache keys" {
+	lifetime system root {
+		register fast: ICache key "fast" -> MemoryCache
+		register durable: ICache name "durable" -> DiskCache
+	}
+	lifetime request from system { }
+
+	resolve quick: ICache key "fast" from request
+	expect quick success { selected system.fast }
+	resolve safe: ICache name "durable" from request
+	expect safe success { selected system.durable }
+	resolve archive: ICache key "archive" from request
+	expect archive failure missingKey {
+		message "No archive cache was supplied in this authored scenario"
+		confidence declared
+	}
+	resolve retry: ICache key "fast" from request
+	expect retry success { selected system.fast }
+
+	dispose request
+	view diagnostics
+}
+@endautofac

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1380" height="560" viewBox="0 0 1380 560" role="img" aria-labelledby="title desc">
+  <title id="title">Lifetime Composition example: System and Request scopes</title>
+  <desc id="desc">System lifetime holds IBar and RequestModule registrations. The module is resolved from System and installed into the Request lifetime's construction compartment. Request resolves IFoo and IBar, fails to resolve a missing keyed ICache, then is disposed while System continues.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#64748b"/>
+    </marker>
+    <marker id="moduleArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#0f766e"/>
+    </marker>
+    <style>
+      text{font-family:Inter,'Segoe UI',Arial,sans-serif;fill:#334155}
+      .kicker{font-size:16px;font-weight:700;letter-spacing:.7px}
+      .section{font-size:16px;font-weight:700}
+      .main{font-size:16px}
+      .sub{font-size:13px;fill:#64748b}
+      .tiny{font-size:12px;fill:#64748b}
+      .green{fill:#047857}
+      .teal{fill:#0f766e}
+      .red{fill:#b91c1c}
+    </style>
+  </defs>
+
+  <!-- System lifetime envelope -->
+  <rect x="14" y="15" width="1350" height="520" rx="17" fill="#f8fafc" stroke="#94a3b8" stroke-width="2"/>
+  <text x="38" y="48" class="kicker">SYSTEM LIFETIME</text>
+  <text x="1350" y="48" font-size="12" fill="#64748b" text-anchor="end">root · remains active</text>
+  <rect x="38" y="65" width="297" height="140" rx="10" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="56" y="93" class="section">Construction</text>
+  <line x1="56" x2="316" y1="105" y2="105" stroke="#cbd5e1"/>
+  <text x="56" y="133" class="main">IBar → Bar</text>
+  <text x="56" y="163" class="main">RequestModule</text>
+  <text x="56" y="189" class="tiny">Explicit registrations fixed at build</text>
+  <path d="M335 144 H1337" stroke="#64748b" stroke-width="3" marker-end="url(#a)" fill="none"/>
+
+  <!-- module resolution -->
+  <circle cx="455" cy="144" r="10" stroke="#059669" stroke-width="3" fill="#fff"/>
+  <text x="455" y="97" text-anchor="middle" class="section green">Resolve RequestModule</text>
+  <text x="455" y="118" text-anchor="middle" class="sub">module1 created/reused</text>
+
+  <!-- Child Request lifetime -->
+  <rect x="508" y="250" width="815" height="232" rx="13" fill="#fff" stroke="#64748b" stroke-width="2"/>
+  <rect x="508" y="250" width="365" height="232" rx="13" fill="#e0f2fe"/>
+  <path d="M873 250 V482" stroke="#0284c7" stroke-width="2"/>
+  <text x="526" y="280" class="kicker" fill="#075985">REQUEST CONSTRUCTION</text>
+  <text x="526" y="301" class="sub">child of System · tag "request"</text>
+  <line x1="526" x2="853" y1="312" y2="312" stroke="#bae6fd"/>
+  <text x="526" y="339" class="main" fill="#0f766e">install module1</text>
+  <text x="526" y="368" class="main">IFoo → Foo</text>
+  <text x="526" y="395" class="main">ICache [fast] → FastCache</text>
+  <text x="526" y="422" class="main">ƒ IClient → createClient(ctx)</text>
+  <text x="526" y="449" class="main">Decorators: LoggingFoo, MetricsFoo</text>
+  <text x="526" y="472" class="tiny">Construction sealed before active events</text>
+
+  <!-- module provenance link -->
+  <path d="M455 157 C455 216 580 201 634 248" stroke="#0f766e" stroke-width="2.5" stroke-dasharray="7 6" fill="none" marker-end="url(#moduleArr)"/>
+  <rect x="488" y="206" width="152" height="28" rx="7" fill="#ccfbf1"/>
+  <text x="564" y="225" text-anchor="middle" font-size="14" fill="#115e59" font-weight="700">module provenance</text>
+
+  <!-- Request activity -->
+  <text x="892" y="280" class="section">ACTIVE REQUEST</text>
+  <path d="M873 354 H1285" stroke="#64748b" stroke-width="3"/>
+  <g stroke="#059669" stroke-width="3" fill="#fff">
+    <circle cx="936" cy="354" r="10"/>
+    <circle cx="1040" cy="354" r="10"/>
+  </g>
+  <text x="936" y="326" text-anchor="middle" class="sub green">resolve</text>
+  <text x="936" y="389" text-anchor="middle" class="main">IFoo</text>
+  <text x="1040" y="326" text-anchor="middle" class="sub green">resolve</text>
+  <text x="1040" y="389" text-anchor="middle" class="main">IBar</text>
+  <text x="1040" y="408" text-anchor="middle" class="tiny">inherited</text>
+  <g stroke="#dc2626" stroke-width="4" stroke-linecap="round">
+    <path d="M1123 345 L1141 363"/>
+    <path d="M1141 345 L1123 363"/>
+  </g>
+  <text x="1132" y="326" text-anchor="middle" class="sub red">failed</text>
+  <text x="1132" y="390" text-anchor="middle" class="main">ICache</text>
+  <text x="1132" y="409" text-anchor="middle" class="sub">[archive]</text>
+  <path d="M1132 419 V428" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <rect x="1073" y="432" width="116" height="30" rx="6" fill="#fee2e2" stroke="#fca5a5"/>
+  <text x="1131" y="451" text-anchor="middle" font-size="12" fill="#991b1b" font-weight="700">Missing key</text>
+  <g stroke="#d97706" stroke-width="3" stroke-linecap="round">
+    <path d="M1258 336 V372"/>
+    <path d="M1248 336 L1268 372"/>
+  </g>
+  <text x="1258" y="395" text-anchor="middle" font-size="14" fill="#b45309" font-weight="700">Dispose</text>
+
+  <text x="39" y="511" class="tiny">System continues after Request disposal</text>
+  <text x="1321" y="511" text-anchor="end" class="tiny">Logical event order →</text>
+
+</svg>

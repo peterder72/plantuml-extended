@@ -1,0 +1,21 @@
+@startautofac
+' Start here: shaded construction precedes the active request track.
+' A request without expect stays unspecified; success must be authored.
+composition "01 - Requests are not predicted outcomes" {
+	lifetime system root { }
+	lifetime request from system {
+		register worker: IWorker -> Worker sharing perScope
+	}
+
+	resolve probe: IWorker from request
+	resolve work: IWorker from request
+	expect work success {
+		selected request.worker
+		instance worker1
+		state new
+		owner request
+	}
+
+	dispose request
+}
+@endautofac

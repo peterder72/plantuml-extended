@@ -1,0 +1,58 @@
+@startautofac
+' Acquisition, Func invocation and Lazy evaluation are separate authored events.
+' The second Func result reuses an object by declaration, not by Func policy.
+composition "Deferred work: Func calls and Lazy value" {
+	lifetime system root { }
+	lifetime request from system {
+		register worker: IWorker -> Worker sharing perScope ownership scope
+		register report: IReport -> Report sharing perScope ownership scope
+	}
+	resolve factory: Func<IWorker> from request
+	expect factory success {
+		instance factoryObj
+		state new
+		activation request
+		sharing none
+		owner request
+	}
+	invoke first: factory()
+	expect first success {
+		selected request.worker
+		instance calledObj
+		state new
+		activation request
+		sharing request
+		owner request
+	}
+	invoke second: factory()
+	expect second success {
+		selected request.worker
+		instance calledObj
+		state reused
+		activation request
+		sharing request
+		owner request
+	}
+	resolve lazy: Lazy<IReport> from request
+	expect lazy success {
+		instance lazyObj
+		state new
+		activation request
+		sharing none
+		owner request
+	}
+	evaluate value: lazy.Value
+	expect value success {
+		selected request.report
+		instance reportObj
+		state new
+		activation request
+		sharing request
+		owner request
+		message "Lazy evaluation creates the separately declared report object"
+	}
+	dispose request
+	expand second trace
+	expand value trace
+}
+@endautofac

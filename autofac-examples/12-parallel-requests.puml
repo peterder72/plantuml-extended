@@ -1,0 +1,37 @@
+@startautofac
+composition "Sibling requests: unordered does not mean simulated concurrency" {
+	lifetime system root {
+		register worker: IWorker -> Worker sharing perScope
+	}
+	' Sibling births are unordered; both precede the following request group.
+	parallel {
+		lifetime left from system { }
+		lifetime right from system { }
+	}
+	' Separate objects avoid any claimed new-before-reuse dependency.
+	parallel {
+		resolve leftWork: IWorker from left
+		resolve rightWork: IWorker from right
+	}
+	expect leftWork success {
+		selected system.worker
+		instance leftWorker
+		state new
+		activation left
+		sharing left
+		owner left
+	}
+	expect rightWork success {
+		selected system.worker
+		instance rightWorker
+		state new
+		activation right
+		sharing right
+		owner right
+	}
+	' These explicit ends occur after every member of the request group.
+	dispose left
+	dispose right
+	dispose system
+}
+@endautofac

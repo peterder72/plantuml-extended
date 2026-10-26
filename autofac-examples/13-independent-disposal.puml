@@ -1,0 +1,28 @@
+@startautofac
+composition "Independent ends: parent disposal is not a child cascade" {
+	lifetime system root { }
+	lifetime request from system {
+		register worker: IWorker -> Worker sharing perScope
+	}
+	' An open child at this parent end produces undisposedChild, not disposal.
+	dispose system
+	resolve continuing: IWorker from request
+	expect continuing success {
+		selected request.worker
+		instance liveWorker
+		state new
+		activation request
+		sharing request
+		owner request
+		message "Author declares child activity after the parent end"
+	}
+	' The child has its own terminal end; lanes preserve the actual ancestry.
+	dispose request
+	resolve tooLate: IWorker from request
+	' Invalid use stays drawable with a disposedScope structural warning.
+	expect tooLate failure disposedScope {
+		message "This request is after its own explicit scope end"
+	}
+	view diagnostics
+}
+@endautofac

@@ -44,7 +44,7 @@ public enum DiagramType {
 
 	SEQUENCE, STATE, CLASS, OBJECT, ACTIVITY, DESCRIPTION, COMPOSITE, TIMING, HELP, BPM, DITAA, DOT, JCCKIT, SALT, FLOW,
 	CREOLE, MATH, LATEX, DEFINITION, GANTT, CHRONOLOGY, NWDIAG, MINDMAP, WBS, WIRE, JSON, GIT, BOARD, YAML, HCL, EBNF,
-	REGEX, FILES, CHEN_EER, CHART, PACKET, SPRITES, CRASH, UNKNOWN;
+	REGEX, FILES, CHEN_EER, CHART, PACKET, AUTOFAC, SPRITES, CRASH, UNKNOWN;
 
 	private static final EnumSet<DiagramType> EMPTY = EnumSet.noneOf(DiagramType.class);
 
@@ -93,6 +93,11 @@ public enum DiagramType {
 
 	private static Collection<DiagramType> getTypes(CharSequence text, final int p) {
 		switch (Character.toLowerCase(text.charAt(p))) {
+
+		case 'a':
+			if (check("autofac", text, p))
+				return EnumSet.of(AUTOFAC);
+			return EnumSet.of(UNKNOWN);
 
 		case 'b':
 			if (check("bpm", text, p))
@@ -291,6 +296,9 @@ public enum DiagramType {
 
 		if (this == PACKET)
 			return SName.packetdiagDiagram;
+
+		if (this == AUTOFAC)
+			return SName.autofacDiagram;
 
 		return SName.activityDiagram;
 	}

@@ -79,6 +79,8 @@ PlantUML is a component that allows you to create various UML diagrams through s
     - [Entity Relationship (ER) diagram (Chen's notation)](http://plantuml.com/er-diagram)
   -  [Chart diagram](http://plantuml.com/chart-diagram)
   -  [Files (files tree) diagram](http://plantuml.com/files-diagram)
+  - [Autofac lifetime composition](plan/autofac-lifetime-dsl-design.md) (`@startautofac`; JVM and TeaVM, author-declared outcomes rather than container simulation)
+    - [Showcase: 16 editable examples with SVG previews](autofac-examples/)
 
 ### 📣 Additional Features
 

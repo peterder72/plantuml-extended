@@ -1,0 +1,23 @@
+---
+output: svg
+expected-description: (Autofac lifetime)
+---
+@startautofac
+composition "Declared recursive cross-scope call" {
+  lifetime system root {
+    register risky: IFoo via delegate {
+      call resolve IFoo from request
+    } sharing single
+  }
+  lifetime request from system { }
+  resolve trigger: IFoo from request
+  expect trigger recursion {
+    selected system.risky
+    cycle risky -> request.IFoo -> risky
+    risk stackOverflow
+    confidence uncertain
+  }
+  call resolve again: IFoo from request during trigger
+  view diagnostics
+}
+@endautofac

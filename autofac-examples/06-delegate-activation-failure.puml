@@ -1,0 +1,27 @@
+@startautofac
+' A registered IClient can fail inside activation: IClient itself is not missing.
+' The anonymous call is a template; only the named call asserts a runtime bridge.
+composition "Delegate found; dependency missing" {
+	lifetime system root { }
+	lifetime request from system {
+		register client: IClient via delegate {
+			call resolve IConnection from request
+		} sharing transient ownership scope
+	}
+	resolve client: IClient from request
+	expect client failure activationFailure {
+		selected request.client
+		activation request
+		path IClient -> delegate -> IConnection
+		cause "missingRegistration(IConnection)"
+		confidence declared
+	}
+	call resolve connection: IConnection from request during client
+	expect connection failure missingRegistration {
+		message "Explicitly authored delegate call; not generated from its template"
+	}
+	dispose request
+	expand client trace
+	view diagnostics
+}
+@endautofac

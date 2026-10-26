@@ -95,6 +95,7 @@ import net.sourceforge.plantuml.nwdiag.NwDiagramFactory;
 import net.sourceforge.plantuml.openiconic.PSystemListOpenIconicFactory;
 import net.sourceforge.plantuml.openiconic.PSystemOpenIconicFactory;
 import net.sourceforge.plantuml.packetdiag.PacketDiagramFactory;
+import net.sourceforge.plantuml.autofac.AutofacDiagramFactory;
 import net.sourceforge.plantuml.preproc.PreprocessingArtifact;
 import net.sourceforge.plantuml.regex.RegexConcat;
 import net.sourceforge.plantuml.regexdiagram.PSystemRegexFactory;
@@ -157,6 +158,7 @@ public class PSystemBuilder {
 		factories.add(new WBSDiagramFactory());
 		factories.add(new ChartDiagramFactory());
 		factories.add(new PacketDiagramFactory());
+		factories.add(new AutofacDiagramFactory());
 
 		// ::comment when __MIT__ __EPL__ __BSD__ __ASL__ __LGPL__
 //		factories.add(new PSystemJcckitFactory());

@@ -337,6 +337,47 @@ mindmapDiagram {
 }
 
 
+autofacDiagram {
+	Shadowing 0
+	autofacLifetime {
+		BackgroundColor #F8FAFC
+		LineColor #94A3B8
+		LineThickness 1.5
+	}
+	autofacConstruction {
+		BackgroundColor #E2E8F0
+		LineColor #94A3B8
+		LineThickness 1.5
+	}
+	autofacResolve {
+		BackgroundColor transparent
+		LineColor #047857
+		LineThickness 2
+	}
+	autofacFailure {
+		BackgroundColor #FEE2E2
+		LineColor #B91C1C
+		FontColor #B91C1C
+		LineThickness 2
+	}
+	autofacDispose {
+		BackgroundColor transparent
+		LineColor #B45309
+		LineThickness 2
+	}
+	autofacModule {
+		BackgroundColor transparent
+		LineColor #0F766E
+		LineThickness 1.5
+	}
+	autofacWarning {
+		BackgroundColor #FEF3C7
+		LineColor #92400E
+		FontColor #92400E
+		LineThickness 1.5
+	}
+}
+
 wbsDiagram {
     Padding 10
     Margin 15
@@ -556,6 +597,36 @@ root {
   FontColor white
   LineColor #e7e7e7
   BackGroundColor #313139
+}
+
+autofacDiagram {
+	autofacLifetime {
+		BackgroundColor #202630
+		LineColor #94A3B8
+	}
+	autofacConstruction {
+		BackgroundColor #303A49
+		LineColor #94A3B8
+	}
+	autofacResolve {
+		LineColor #6EE7B7
+	}
+	autofacFailure {
+		BackgroundColor #451A1A
+		LineColor #FCA5A5
+		FontColor #FCA5A5
+	}
+	autofacDispose {
+		LineColor #FBBF24
+	}
+	autofacModule {
+		LineColor #5EEAD4
+	}
+	autofacWarning {
+		BackgroundColor #422D10
+		LineColor #FCD34D
+		FontColor #FCD34D
+	}
 }
 
 document {

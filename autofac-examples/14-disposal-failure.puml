@@ -1,0 +1,28 @@
+@startautofac
+' A failed disposal attempt is not a terminal cap.
+' Lifecycle after the failure remains unspecified until an explicit terminal disposal.
+composition "14 - Cleanup failure is not a successful end" {
+	lifetime system root { }
+	lifetime request from system {
+		register connection: IConnection -> Connection ownership scope
+	}
+	resolve open: IConnection from request
+	expect open success {
+		selected request.connection
+		instance connection1
+		state new
+		owner request
+	}
+
+	dispose close: request
+	expect close failure disposalError {
+		path Connection -> Dispose
+		cause "Cleanup threw before completion"
+		exception InvalidOperationException
+	}
+	resolve status: IHealth from request
+	dispose request
+
+	view diagnostics
+}
+@endautofac

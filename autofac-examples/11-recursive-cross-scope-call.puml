@@ -1,0 +1,25 @@
+@startautofac
+composition "Recursive delegate: template versus explicit runtime call" {
+	lifetime system root {
+		' This is a call template, not an automatically executed request.
+		register risky: IFoo via delegate {
+			call resolve IFoo from request
+		} sharing single
+	}
+	lifetime request from system { }
+	resolve trigger: IFoo from request
+	' Finite authored recursion; stack overflow is a risk, not an exception claim.
+	expect trigger recursion {
+		selected system.risky
+		activation system
+		cycle risky -> request.IFoo -> risky
+		risk stackOverflow
+		confidence uncertain
+		message "Delegate re-entry, not a constructor dependency cycle"
+	}
+	' Only this named event asserts an actual runtime bridge.
+	call resolve again: IFoo from request during trigger
+	dispose request
+	view diagnostics
+}
+@endautofac

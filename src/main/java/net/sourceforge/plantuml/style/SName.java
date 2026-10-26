@@ -49,6 +49,14 @@ public enum SName {
 	analog, //
 	archimate, //
 	arrow, //
+	autofacDiagram, //
+	autofacLifetime, //
+	autofacConstruction, //
+	autofacResolve, //
+	autofacFailure, //
+	autofacDispose, //
+	autofacModule, //
+	autofacWarning, //
 	artifact, //
 	binary, //
 	body, //

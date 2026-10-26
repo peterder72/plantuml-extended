@@ -1,0 +1,26 @@
+@startautofac
+composition "Property cycle: explicitly supported shared objects" {
+	lifetime system root {
+		register hub: IHub -> Hub sharing perScope
+		register view: IView -> View sharing perScope
+		depends Hub { view: IView via property }
+		depends View { hub: IHub via property }
+	}
+	' Shared policies describe configuration; these outcomes are authored facts.
+	resolve hub: IHub from system
+	expect hub success {
+		selected system.hub
+		instance hubObject
+		state new
+		activation system
+		sharing system
+		owner system
+		category propertyCycle
+		cycle Hub -> View -> Hub
+		message "Writable properties; AllowCircularDependencies; shared participants"
+	}
+	' The successful feedback path is not a constructor-cycle failure.
+	expand hub trace
+	dispose system
+}
+@endautofac

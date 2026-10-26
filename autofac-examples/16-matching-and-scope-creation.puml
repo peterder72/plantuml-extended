@@ -1,0 +1,36 @@
+@startautofac
+' Matching tags and construction failures are author-declared outcomes.
+' A failed lifetime has construction but no active track.
+<style>
+autofacDiagram {
+	FontSize 16
+	autofacConstruction {
+		LineThickness 2
+	}
+}
+</style>
+composition "16 - Missing scope tag and failed construction" {
+	lifetime system root {
+		register session: ISession -> Session sharing matching("request")
+	}
+	lifetime untagged from system { }
+	resolve session: ISession from untagged
+	expect session failure missingMatchingScope {
+		selected system.session
+		tag "request"
+		message "The required request tag is absent in this scenario"
+	}
+	dispose untagged
+
+	lifetime rejected from system tag "request" {
+		register worker: IWorker -> Worker
+	}
+	expect rejected failure scopeCreation {
+		cause "A construction callback rejected this lifetime"
+		exception ConfigurationException
+		confidence declared
+	}
+
+	view diagnostics
+}
+@endautofac

@@ -57,14 +57,15 @@ Browser and headless TeaVM are separate compilations; both require runtime verif
 
 ### Autofac npm prerelease
 
-Build with the existing Nix tooling and JDK 21:
+For release metadata, build from a clean feature-branch checkout with the existing Nix tooling and JDK 21. The metadata-stamping task is intentionally explicit; ordinary developer builds retain version placeholders.
 
 ```sh
-./gradlew --offline :npmPackage -Pfast \
+./gradlew --offline :patchCompilationInfo :npmPackage :jar -Pfast \
   -PnpmName=@peterder72/plantuml-core \
   -PnpmVersion=1.2026.7-autofac.1 \
   -PnpmTag=autofac \
   -PnpmRepository=https://github.com/peterder72/plantuml-extended
+git restore -- src/main/java/net/sourceforge/plantuml/version/CompilationInfo.java
 npm publish ./build/npm-plantuml --tag autofac --access public \
   --registry=https://registry.npmjs.org/
 ```

@@ -1,6 +1,6 @@
 # Autofac Lifetime Composition DSL — Design Specification
 
-**Status:** Generic redesign release preparation · **Revision:** 2.0
+**Status:** Published prerelease · **Revision:** 2.0
 **Diagram type:** `@startautofac` / `@endautofac`  
 **Targets:** JVM SVG/PNG, browser TeaVM SVG, headless TeaVM SVG.
 
@@ -145,7 +145,7 @@ Browser and headless TeaVM are separate compilations; both require runtime verif
 
 ### Release status
 
-The generic redesign is being prepared for npm `@peterder72/plantuml-core@1.2026.7-autofac.2` on dist-tag `autofac` and VS Code prerelease `0.9.0`. Publication is pending; these target versions are not a claim of availability. The earlier npm `1.2026.7-autofac.1` and VS Code prerelease `0.8.0` contain the previous, incompatible DSL and must not be used for these examples. Do not republish the immutable npm version. The redesign's JVM and both compiled TeaVM runtime checks are recorded in [implementation learnings](autofac-implementation-learnings.md); fresh smoke checks of the final release artifacts are still required.
+The generic redesign is published as npm `@peterder72/plantuml-core@1.2026.7-autofac.2` on dist-tag `autofac` and VS Code prerelease `0.9.0`. The earlier npm `1.2026.7-autofac.1` and VS Code prerelease `0.8.0` contain the previous, incompatible DSL and must not be used for these examples. Npm `latest` and `beta` were not moved; the VS Code stable release remains `0.7.0`. The extension was published by the guarded [prerelease workflow](https://github.com/peterder72/plantuml-live-editor/actions/runs/40598543888), after its quality, browser and VS Code gates passed. Final-artifact verification is recorded in [implementation learnings](autofac-implementation-learnings.md).
 
 Use the existing Nix environment for builds; do not install a separate toolchain or paste store hashes into commands. Release metadata stamping remains explicit, source must be available on `feature/autofac` in both repositories, and npm publication must use dist-tag `autofac` without moving `latest` or `beta`. Do not create a Git release tag: this fork's CI has broad tag-creation triggers. Vite consumers must preserve generated TeaVM code with `build.minify: false`; re-minification has produced invalid JavaScript. The 16 editable showcase `.puml` files are source-controlled; generated `autofac-examples/*.svg` previews remain local and ignored. Native Vega SVG regression references and the historical `plan/autofac-lifetime-example.svg` visual reference remain tracked.
 

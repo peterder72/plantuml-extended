@@ -149,8 +149,12 @@ The browser packet fixture still clips its leftmost `0` tick, an issue observed 
 
 The earlier iterative implementation's results are deliberately not carried forward; its language and renderer no longer exist.
 
-## 11. Generic redesign release preparation
+## 11. Generic redesign prerelease
 
-The release targets are npm `@peterder72/plantuml-core@1.2026.7-autofac.2` on dist-tag `autofac` and VS Code prerelease `0.9.0`, with source on `feature/autofac` in both repositories. Publication is pending; the recorded runtime results above do not establish that these packages are available or replace fresh smoke checks of the final packaged artifacts. Leave npm `latest` and `beta` unchanged, do not reuse immutable `1.2026.7-autofac.1`, and do not create Git release tags.
+Published npm `@peterder72/plantuml-core@1.2026.7-autofac.2` on dist-tag `autofac`, and VS Code prerelease `0.9.0`, from `feature/autofac` in both repositories. Engine source commit: `9214f9eff1f9396c5b3c4958853431ba2c273378`; viewer release commit: `9205fc4cd2c35da6509e73a9a42ce09cd4c066d4`. Npm `latest` and `beta` remain `1.2026.6-limit8192.1`; the VS Code stable release remains `0.7.0`. No Git release tags were created.
 
 All 16 showcase sources use the generic lifetime/object/event/native-message language. Keep their editable `autofac-examples/*.puml` sources in Git and generated SVG previews local and ignored. This policy does not remove the native Vega SVG regression goldens or the historical `plan/autofac-lifetime-example.svg` visual reference.
+
+Final stamped release artifacts passed the complete JVM suite (3,058 passed, 10 skipped), 25 JVM SVG/PNG cases, 45 headless TeaVM renders, and 44 light/25 dark packaged-browser renders. The first 25 headless Autofac cases ran without Viz loaded. Java 8 source compatibility passed. The engine installed from npm has the same SHA-256 as the verified package build.
+
+The viewer passed typecheck, lint and all 161 unit tests. Its actual offline `file://` artifact rendered the checked-in Autofac sample with no HTTP requests. A cached real VS Code runtime validated all 16 engine showcases plus the viewer sample, exported SVG and PNG, and reported the malformed-source error on line 4. [CI run 40598543888](https://github.com/peterder72/plantuml-live-editor/actions/runs/40598543888) additionally passed browser and VS Code integration/scenario gates and published the tested VSIX without rebuilding it. The downloaded artifact's checksum and `Microsoft.VisualStudio.Code.PreRelease=true` manifest property were verified. Stable extension publishing, GitHub Pages deployment and GitHub release creation were skipped.

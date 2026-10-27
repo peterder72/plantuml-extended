@@ -52,6 +52,11 @@ public enum SName {
 	autofacDiagram, //
 	autofacLifetime, //
 	autofacConstruction, //
+	autofacChildLifetime, //
+	autofacChildConstruction, //
+	autofacHeading, //
+	autofacMuted, //
+	autofacDetail, //
 	autofacResolve, //
 	autofacFailure, //
 	autofacDispose, //

@@ -830,7 +830,7 @@ tasks.register<Zip>("teavmZip") {
 // Usage:
 //   gradlew npmPackage           # assemble build/npm-plantuml
 //   cd build/npm-plantuml
-//   npm publish --access public  # done manually by the maintainer
+//   npm publish --access public  # uses the generated publishConfig.tag
 //
 tasks.register("npmPackage") {
 	description = "Assembles a publishable npm package for the TeaVM JS engine (issue #2715)."
@@ -861,12 +861,16 @@ tasks.register("npmPackage") {
 				?.let { m -> "${m.groupValues[1]}-${m.groupValues[2].lowercase()}.${m.groupValues[3]}" }
 			?: gradleVersion
 		val isPrerelease = npmVersion.contains("-")
+		val npmTag = (project.findProperty("npmTag") as String?)?.trim()?.takeIf { it.isNotEmpty() }
+			?: if (isPrerelease) "beta" else "latest"
 
 		// npm package name. Defaults to the scoped name on the 'plantuml' org
 		// (the unscoped "plantuml" name is owned by a third party). Override with
 		// -PnpmName=... if needed.
 		val npmName = (project.findProperty("npmName") as String?)?.trim()?.takeIf { it.isNotEmpty() }
 			?: "@plantuml/core"
+		val npmRepository = (project.findProperty("npmRepository") as String?)?.trim()?.takeIf { it.isNotEmpty() }
+			?: "https://github.com/plantuml/plantuml"
 
 		// Files that make up the package. Everything the demo pages reference,
 		// minus the heavy stdlib bundles.
@@ -892,6 +896,7 @@ tasks.register("npmPackage") {
 			from(teavmJsOutputDir) {
 				include(*include.toTypedArray())
 			}
+			from("LICENSE")
 			into(pkgDir)
 		}
 
@@ -907,7 +912,10 @@ tasks.register("npmPackage") {
 			  "exports": {
 			    ".": "./plantuml.js",
 			    "./plantuml.js": "./plantuml.js",
-			    "./viz-global.js": "./viz-global.js"
+			    "./viz-global.js": "./viz-global.js",
+			    "./emoji.js": "./emoji.js",
+			    "./openiconic.js": "./openiconic.js",
+			    "./package.json": "./package.json"
 			  },
 			  "files": [
 			    "plantuml.js",
@@ -925,7 +933,8 @@ tasks.register("npmPackage") {
 			    "github-integration-poc.html",
 			    "github-integration-web-worker-poc.html",
 			    "GITHUB_INTEGRATION.md",
-			    "README.md"
+			    "README.md",
+			    "LICENSE"
 			  ],
 			  "keywords": [
 			    "plantuml",
@@ -940,20 +949,21 @@ tasks.register("npmPackage") {
 			  "homepage": "https://plantuml.com/",
 			  "repository": {
 			    "type": "git",
-			    "url": "git+https://github.com/plantuml/plantuml.git"
+			    "url": "git+$npmRepository.git"
 			  },
 			  "bugs": {
-			    "url": "https://github.com/plantuml/plantuml/issues"
+			    "url": "$npmRepository/issues"
 			  },
 			  "author": "Arnaud Roques",
 			  "license": "GPL-3.0-or-later",
-			  "sideEffects": false
+			  "publishConfig": { "tag": "$npmTag" },
+			  "sideEffects": ["./viz-global.js"]
 			}
 		""".trimIndent()
 		file("$pkgDir/package.json").writeText(packageJson + "\n")
 
 		// README.md (shown on npmjs.com)
-		val cdnInstall = if (isPrerelease) "npm install $npmName@beta" else "npm install $npmName"
+		val cdnInstall = if (npmTag == "latest") "npm install $npmName" else "npm install $npmName@$npmTag"
 		val readme = """
 			# $npmName
 
@@ -962,8 +972,7 @@ tasks.register("npmPackage") {
 			other diagrams **entirely in the browser** -- no server, no Java, no Graphviz
 			binary required.
 
-			This package is generated from the official PlantUML build (issue
-			[#2715](https://github.com/plantuml/plantuml/issues/2715)).
+			This package is generated from the [PlantUML sources]($npmRepository).
 
 			## Install
 
@@ -999,6 +1008,13 @@ tasks.register("npmPackage") {
 			[GITHUB_INTEGRATION.md](./GITHUB_INTEGRATION.md) for details and a full
 			GitHub-style integration example.
 
+			## Bundlers
+
+			The TeaVM engine is already optimized. When bundling this prerelease with
+			Vite, use `build: { minify: false }`: production re-minification has produced
+			invalid JavaScript (`Undefined label`). Direct browser imports do not need
+			this workaround.
+
 			## What's included
 
 			- `plantuml.js` -- the engine
@@ -1015,7 +1031,7 @@ tasks.register("npmPackage") {
 
 			[GPL-3.0-or-later](https://www.gnu.org/licenses/gpl-3.0.txt). Images you
 			generate with PlantUML are **not** covered by the GPL -- see the project
-			[license](https://github.com/plantuml/plantuml/blob/master/license.txt).
+			[license]($npmRepository/blob/HEAD/LICENSE).
 		""".trimIndent()
 		file("$pkgDir/README.md").writeText(readme + "\n")
 
@@ -1025,11 +1041,8 @@ tasks.register("npmPackage") {
 		println("  dir     : ${pkgDir.absolutePath}")
 		println("  name    : $npmName")
 		println("  version : $npmVersion  (from gradle '$gradleVersion')")
-		if (isPrerelease) {
-			println("  NOTE    : prerelease -> publish with:  npm publish --tag beta --access public")
-		} else {
-			println("  publish : npm publish --access public")
-		}
+		println("  tag     : $npmTag")
+		println("  publish : npm publish --tag $npmTag --access public")
 		println("======================")
 		println("")
 	}

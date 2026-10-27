@@ -73,7 +73,10 @@ public final class AutofacTextBlock implements TextBlock {
 	@Override
 	public void drawU(UGraphic ug) {
 		final AutofacLayout layout = layout(ug.getStringBounder());
-		drawLabel(ug, layout.orderLabel, 40, 8);
+		final HColor background = getBackcolor();
+		if (background.isTransparent() == false)
+			ug.apply(background).apply(background.bg()).apply(UStroke.withThickness(0))
+					.draw(URectangle.build(layout.width, layout.height));
 		final List<ScopeBox> scopes = layout.scopeOrder;
 		for (ScopeBox scope : scopes)
 			drawEnvelope(ug, scope, layout);
@@ -88,7 +91,8 @@ public final class AutofacTextBlock implements TextBlock {
 		for (Panel panel : layout.panels)
 			drawPanel(ug, panel);
 		start(ug, "af-legend", "autofac-legend", null);
-		drawLabel(ug, layout.legend, 40, layout.legendY);
+		drawLabel(ug, layout.legend, layout.legendX, layout.legendY);
+		drawLabel(ug, layout.orderLabel, layout.orderX, layout.orderY);
 		ug.closeGroup();
 	}
 
@@ -146,26 +150,21 @@ public final class AutofacTextBlock implements TextBlock {
 
 	private void drawEnvelope(UGraphic ug, ScopeBox scope, AutofacLayout layout) {
 		start(ug, "af-scope-" + scope.node.id, "autofac-scope", scope.node);
-		final SName role = scope.failed ? SName.autofacFailure : SName.autofacLifetime;
-		final UGraphic styled = paint(ug, role, true);
-		if (scope.open && !scope.failed) {
-			// Intentionally no right-hand closing stroke: the scope has no declared end.
-			final UPath outline = UPath.none();
-			outline.moveTo(scope.right(), scope.y);
-			outline.lineTo(scope.x + 12, scope.y);
-			outline.cubicTo(scope.x, scope.y, scope.x, scope.y, scope.x, scope.y + 12);
-			outline.lineTo(scope.x, scope.bottom() - 12);
-			outline.cubicTo(scope.x, scope.bottom(), scope.x, scope.bottom(), scope.x + 12, scope.bottom());
-			outline.lineTo(scope.right(), scope.bottom());
-			styled.draw(outline);
-		} else {
-			styled.apply(new UTranslate(scope.x, scope.y)).draw(URectangle.build(scope.width, scope.height).rounded(12));
-		}
-		if (!scope.failed) {
+		final SName role = scope.failed ? SName.autofacFailure
+				: scope.depth == 0 ? SName.autofacLifetime : SName.autofacChildLifetime;
+		paint(ug, role, true).apply(new UTranslate(scope.x, scope.y))
+				.draw(URectangle.build(scope.width, scope.height).rounded(12));
+		start(ug, "af-event-birth-" + scope.node.id, "autofac-event", scope.node);
+		drawLabel(ug, scope.header, scope.headerX, scope.headerY);
+		drawLabel(ug, scope.subtitle, scope.subtitleX, scope.subtitleY);
+		drawLabel(ug, scope.status, scope.statusX, scope.statusY);
+		ug.closeGroup();
+		if (scope.failed == false) {
+			drawLabel(ug, scope.activeTitle, scope.activeTitleX, scope.activeTitleY);
 			final UGraphic track = paint(ug, SName.autofacLifetime, false).apply(UStroke.withThickness(2));
-			line(track, scope.x + scope.constructionWidth, scope.trackY, scope.right(), scope.trackY);
+			line(track, scope.activeStartX, scope.trackY, scope.trackEndX, scope.trackY);
 			if (scope.open)
-				arrow(track.apply(lineColor(SName.autofacLifetime).bg()), scope.right(), scope.trackY, 1, 0);
+				arrow(track.apply(lineColor(SName.autofacLifetime).bg()), scope.trackEndX, scope.trackY, 1, 0);
 		}
 		if (layout.lanes && scope.node.get("parent") != null) {
 			final ScopeBox parent = layout.scopes.get(scope.node.get("parent"));
@@ -181,22 +180,31 @@ public final class AutofacTextBlock implements TextBlock {
 
 	private void drawConstruction(UGraphic ug, ScopeBox scope) {
 		start(ug, "af-construction-" + scope.node.id, "autofac-construction", scope.node);
-		final UGraphic styled = paint(ug, scope.failed ? SName.autofacFailure : SName.autofacConstruction, true);
-		styled.apply(new UTranslate(scope.x, scope.y)).draw(URectangle.build(scope.constructionWidth, scope.constructionHeight).rounded(12));
-		start(ug, "af-event-birth-" + scope.node.id, "autofac-event", scope.node);
-		drawLabel(ug, scope.label, scope.x + 16, scope.y + 16);
-		ug.closeGroup();
+		final SName role = scope.failed ? SName.autofacFailure
+				: scope.depth == 0 ? SName.autofacConstruction : SName.autofacChildConstruction;
+		final UGraphic styled = paint(ug, role, true);
+		styled.apply(new UTranslate(scope.constructionX, scope.constructionY))
+				.draw(URectangle.build(scope.constructionWidth, scope.constructionHeight).rounded(10));
+		drawLabel(ug, scope.constructionTitle, scope.constructionTitleX, scope.constructionTitleY);
+		final double dividerY = scope.constructionTitleY + scope.constructionTitle.height + 7;
+		line(paint(ug, role, false).apply(UStroke.withThickness(1)),
+				scope.constructionX + 16, dividerY,
+				scope.constructionX + scope.constructionWidth - 16, dividerY);
 		if (scope.failed)
-			cross(paint(ug, SName.autofacFailure, false), scope.x + scope.constructionWidth - 12, scope.y + 12);
+			cross(paint(ug, SName.autofacFailure, false),
+					scope.constructionX + scope.constructionWidth - 16, scope.constructionTitleY + 8);
 		for (ConstructionRow row : scope.rows) {
 			start(ug, row.uid, "register".equals(row.node.kind) ? "autofac-registration" : "autofac-construction", row.node);
 			if ("register".equals(row.node.kind))
-				paint(ug, SName.autofacConstruction, false).apply(UStroke.withThickness(2))
-						.apply(new UTranslate(scope.x + 12, scope.y + row.y + 5))
-						.draw(URectangle.build(8, 8));
-			drawLabel(ug, row.label, scope.x + 28, scope.y + row.y);
+				paint(ug, role, false).apply(UStroke.withThickness(1.5))
+						.apply(new UTranslate(scope.x + row.labelX - 12, scope.y + row.y + 5))
+						.draw(URectangle.build(6, 6));
+			drawLabel(ug, row.label, scope.x + row.labelX, scope.y + row.y);
+			if (row.metadata != null)
+				drawLabel(ug, row.metadata, scope.x + row.labelX, scope.y + row.metadataY);
 			ug.closeGroup();
 		}
+		drawLabel(ug, scope.constructionFooter, scope.constructionFooterX, scope.constructionFooterY);
 		ug.closeGroup();
 	}
 
@@ -210,20 +218,32 @@ public final class AutofacTextBlock implements TextBlock {
 
 	private void drawConnector(UGraphic ug, Connector connector) {
 		start(ug, connector.uid, "autofac-" + connector.kind, connector.source);
-		final SName role = "lookup".equals(connector.kind) ? SName.autofacLifetime : SName.autofacModule;
-		final UGraphic styled = paint(ug, role, false).apply("lookup".equals(connector.kind)
-				? new UStroke(1, 4, 1) : new UStroke(5, 4, 1.5));
+		final boolean lookup = "lookup".equals(connector.kind);
+		final SName role = lookup ? SName.autofacMuted : SName.autofacModule;
+		final UGraphic styled = paint(ug, role, false).apply(lookup
+				? new UStroke(1, 5, 1) : new UStroke(5, 4, 1.5));
 		final UPath path = UPath.none();
 		path.moveTo(connector.x1, connector.y1);
-		path.lineTo(connector.x1, connector.channelY + 8);
-		path.cubicTo(connector.x1, connector.channelY, connector.x1, connector.channelY, connector.x1 + 8, connector.channelY);
-		path.lineTo(connector.x2 + 8, connector.channelY);
-		path.cubicTo(connector.x2, connector.channelY, connector.x2, connector.channelY, connector.x2, connector.channelY + 8);
-		path.lineTo(connector.x2, connector.y2);
+		if (connector.local) {
+			path.cubicTo(connector.x1, connector.channelY, connector.x2, connector.channelY,
+					connector.x2, connector.y2);
+		} else {
+			path.lineTo(connector.x1, connector.channelY + 8);
+			path.cubicTo(connector.x1, connector.channelY, connector.x1, connector.channelY,
+					connector.x1 + 8, connector.channelY);
+			path.lineTo(connector.x2 + 8, connector.channelY);
+			path.cubicTo(connector.x2, connector.channelY, connector.x2, connector.channelY,
+					connector.x2, connector.channelY + 8);
+			path.lineTo(connector.x2, connector.y2);
+		}
 		styled.draw(path);
 		arrow(paint(ug, role, false).apply(lineColor(role).bg()), connector.x2, connector.y2, 0, 1);
-		drawLabel(ug, connector.label, Math.min(connector.x1, connector.x2) + 12,
-				connector.channelY - connector.label.height - 2);
+		if (connector.label.width > 0) {
+			paint(ug, role, true).apply(UStroke.withThickness(0.5))
+					.apply(new UTranslate(connector.labelX - 6, connector.labelY - 4))
+					.draw(URectangle.build(connector.label.width + 12, connector.label.height + 8).rounded(6));
+			drawLabel(ug, connector.label, connector.labelX, connector.labelY);
+		}
 		ug.closeGroup();
 	}
 
@@ -233,8 +253,7 @@ public final class AutofacTextBlock implements TextBlock {
 		final UGraphic styled = paint(ug, role, false).apply(UStroke.withThickness(2));
 		final ScopeBox eventScope = layout.scopes.get(event.node.get("scope"));
 		if (eventScope != null && event.y > eventScope.trackY)
-			line(paint(ug, SName.autofacLifetime, false), event.x - 12, event.y,
-					event.x + event.width, event.y);
+			line(paint(ug, SName.autofacLifetime, false), event.left, event.y, event.right(), event.y);
 		final Outcome outcome = event.outcome;
 		if ("dispose".equals(event.node.kind)) {
 			line(styled, event.x - 6, event.y + 9, event.x, event.y - 9);
@@ -245,28 +264,35 @@ public final class AutofacTextBlock implements TextBlock {
 			cross(styled, event.x, event.y);
 		} else {
 			final boolean success = outcome != null && "success".equals(outcome.kind);
+			final SName scopeRole = eventScope != null && eventScope.depth > 0
+					? SName.autofacChildLifetime : SName.autofacLifetime;
 			final UGraphic circle = success ? styled.apply(lineColor(role).bg()) : styled
-					.apply(style(SName.autofacLifetime).value(PName.BackGroundColor).asColor(skin.getIHtmlColorSet()).bg());
+					.apply(style(scopeRole).value(PName.BackGroundColor).asColor(skin.getIHtmlColorSet()).bg());
 			final double radius = AutofacLayout.MARKER_RADIUS;
 			circle.apply(new UTranslate(event.x - radius, event.y - radius)).draw(UEllipse.build(radius * 2, radius * 2));
-			if (outcome != null && "reused".equals(outcome.get("state")))
-				feedback(styled, event.x - 10, event.y + 12, 34, 20, false);
+			if (outcome != null && "reused".equals(outcome.get("state"))
+					&& outcome.paths.containsKey("cycle") == false && "recursion".equals(outcome.kind) == false)
+				feedback(styled, event.feedbackX, event.feedbackY, event.feedbackWidth, event.feedbackHeight, false);
 		}
 		if (outcome != null && (outcome.paths.containsKey("cycle") || "recursion".equals(outcome.kind)))
 			feedback(styled.apply(UStroke.withThickness("recursion".equals(outcome.kind) ? 3 : 2)),
-					event.x - 8, event.y + 12, Math.max(60, event.label.width), 24, true);
+					event.feedbackX, event.feedbackY, event.feedbackWidth, event.feedbackHeight, true);
+		drawLabel(ug, event.action, event.actionX, event.actionY);
 		if (outcome != null && outcome.get("instance") != null) {
 			start(ug, "af-instance-" + outcome.get("instance") + "-" + event.node.id, "autofac-instance", event.node);
 			drawLabel(ug, event.label, event.labelX, event.labelY);
+			drawLabel(ug, event.detail, event.detailX, event.detailY);
 			ug.closeGroup();
 		} else {
 			drawLabel(ug, event.label, event.labelX, event.labelY);
+			drawLabel(ug, event.detail, event.detailX, event.detailY);
 		}
 		final ScopeBox scope = layout.scopes.get(event.node.get("scope"));
-		if (scope != null && (event.x < scope.x || (!scope.open && event.x > scope.right()))) {
+		if (scope != null && (event.x < scope.x || (scope.open == false && event.x > scope.trackEndX))) {
 			final UGraphic warning = paint(ug, SName.autofacWarning, false).apply(new UStroke(3, 3, 1.5));
-			line(warning, event.x, event.y + 12, event.x < scope.x ? scope.x : scope.right(), event.y + 12);
-			arrow(warning.apply(lineColor(SName.autofacWarning).bg()), event.x < scope.x ? scope.x : scope.right(), event.y + 12,
+			final double endpoint = event.x < scope.x ? scope.x : scope.trackEndX;
+			line(warning, event.x, event.y + 12, endpoint, event.y + 12);
+			arrow(warning.apply(lineColor(SName.autofacWarning).bg()), endpoint, event.y + 12,
 					event.x < scope.x ? 1 : -1, 0);
 		}
 		ug.closeGroup();
@@ -290,13 +316,21 @@ public final class AutofacTextBlock implements TextBlock {
 
 	private void drawPanel(UGraphic ug, Panel panel) {
 		start(ug, "af-diagnostic-" + panel.target, "autofac-diagnostic", panel.node);
+		if (panel.leader) {
+			final UGraphic leader = paint(ug, SName.autofacDetail, false).apply(new UStroke(1, 4, 1));
+			line(leader, panel.targetX, panel.targetY, panel.targetX, panel.y);
+			line(leader, panel.targetX, panel.y, panel.x + 16, panel.y);
+		}
 		if (panel.node != null && "instance".equals(panel.node.kind))
 			start(ug, "af-instance-" + panel.node.id, "autofac-instance", panel.node);
-		paint(ug, panel.role, true).apply(new UTranslate(panel.x, panel.y))
-				.draw(URectangle.build(panel.width, panel.height).rounded(12));
-		drawLabel(ug, panel.label, panel.x + 16, panel.y + 16);
+		paint(ug, SName.autofacDetail, true).apply(new UTranslate(panel.x, panel.y))
+				.draw(URectangle.build(panel.width, panel.height).rounded(10));
+		line(paint(ug, panel.role, false).apply(UStroke.withThickness(3)),
+				panel.x + 1, panel.y + 12, panel.x + 1, panel.y + panel.height - 12);
+		drawLabel(ug, panel.title, panel.titleX, panel.titleY);
+		drawLabel(ug, panel.label, panel.labelX, panel.labelY);
 		if (!panel.chain.isEmpty()) {
-			double top = panel.y + panel.label.height + 32;
+			double top = panel.chainY;
 			double remainingHeight = 0;
 			for (Label label : panel.chain)
 				remainingHeight += label.height + 32;

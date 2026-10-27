@@ -43,6 +43,20 @@
       "diagram_class": "SequenceDiagram"
     },
     {
+      "file": "asciiverse/altpar_007.puml",
+      "folder": "asciiverse",
+      "status": "pass",
+      "description": "(2 participants)",
+      "diagram_class": "SequenceDiagram"
+    },
+    {
+      "file": "asciiverse/altpar_008.puml",
+      "folder": "asciiverse",
+      "status": "pass",
+      "description": "(5 participants)",
+      "diagram_class": "SequenceDiagram"
+    },
+    {
       "file": "asciiverse/basic_001.puml",
       "folder": "asciiverse",
       "status": "pass",
@@ -211,6 +225,34 @@
       "diagram_class": "SequenceDiagram"
     },
     {
+      "file": "autofac/baseline.puml",
+      "folder": "autofac",
+      "status": "pass",
+      "description": "(Autofac lifetime)",
+      "diagram_class": "AutofacDiagram"
+    },
+    {
+      "file": "autofac/module-outcomes.puml",
+      "folder": "autofac",
+      "status": "pass",
+      "description": "(Autofac lifetime)",
+      "diagram_class": "AutofacDiagram"
+    },
+    {
+      "file": "autofac/orphan-parallel.puml",
+      "folder": "autofac",
+      "status": "pass",
+      "description": "(Autofac lifetime)",
+      "diagram_class": "AutofacDiagram"
+    },
+    {
+      "file": "autofac/recursion.puml",
+      "folder": "autofac",
+      "status": "pass",
+      "description": "(Autofac lifetime)",
+      "diagram_class": "AutofacDiagram"
+    },
+    {
       "file": "crash/crash-not-crashing.puml",
       "folder": "crash",
       "status": "pass",
@@ -248,7 +290,7 @@
         "net.sourceforge.plantuml.command.PSystemCommandFactory.finalizeDiagram(PSystemCommandFactory.java:150)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:141)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:61)",
-        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:264)",
+        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:266)",
         "net.sourceforge.plantuml.BlockUml.getDiagram(BlockUml.java:194)",
         "test.vega.VegaInputFile.doRunSingleFile(VegaInputFile.java:300)",
         "test.vega.VegaInputFile.runSingleFile(VegaInputFile.java:262)",
@@ -272,7 +314,7 @@
         "net.sourceforge.plantuml.command.PSystemCommandFactory.executeFewLines(PSystemCommandFactory.java:180)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:136)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:61)",
-        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:264)",
+        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:266)",
         "net.sourceforge.plantuml.BlockUml.getDiagram(BlockUml.java:194)",
         "test.vega.VegaInputFile.doRunSingleFile(VegaInputFile.java:300)",
         "test.vega.VegaInputFile.runSingleFile(VegaInputFile.java:262)",
@@ -367,9 +409,9 @@
       "description": "(2 participants)",
       "allow-failure": "true",
       "diagram_class": "SequenceDiagram",
-      "message": "DEBUG output should not contain 'hello' for src\\test\\resources\\vega\\mvp\\hello-debug-skipped.puml [image 1] ==> expected: <false> but was: <true>",
+      "message": "DEBUG output should not contain 'hello' for src/test/resources/vega/mvp/hello-debug-skipped.puml [image 1] ==> expected: <false> but was: <true>",
       "stacktrace": [
-        "org.opentest4j.AssertionFailedError: DEBUG output should not contain 'hello' for src\\test\\resources\\vega\\mvp\\hello-debug-skipped.puml [image 1] ==> expected: <false> but was: <true>",
+        "org.opentest4j.AssertionFailedError: DEBUG output should not contain 'hello' for src/test/resources/vega/mvp/hello-debug-skipped.puml [image 1] ==> expected: <false> but was: <true>",
         "org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:266)",
         "test.vega.VegaCheckerDebug.checkDebugContains(VegaCheckerDebug.java:33)",
         "test.vega.VegaCheckerDebug.checkOutput(VegaCheckerDebug.java:19)",
@@ -705,7 +747,7 @@
         "net.sourceforge.plantuml.command.PSystemCommandFactory.finalizeDiagram(PSystemCommandFactory.java:150)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:141)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:61)",
-        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:264)",
+        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:266)",
         "net.sourceforge.plantuml.BlockUml.getDiagram(BlockUml.java:194)",
         "test.vega.VegaInputFile.doRunSingleFile(VegaInputFile.java:300)",
         "test.vega.VegaInputFile.runSingleFile(VegaInputFile.java:262)",
@@ -812,7 +854,7 @@
         "net.sourceforge.plantuml.command.PSystemCommandFactory.finalizeDiagram(PSystemCommandFactory.java:150)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:141)",
         "net.sourceforge.plantuml.command.PSystemCommandFactory.createSystem(PSystemCommandFactory.java:61)",
-        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:264)",
+        "net.sourceforge.plantuml.PSystemBuilder.createPSystem(PSystemBuilder.java:266)",
         "net.sourceforge.plantuml.BlockUml.getDiagram(BlockUml.java:194)",
         "test.vega.VegaInputFile.doRunSingleFile(VegaInputFile.java:300)",
         "test.vega.VegaInputFile.runSingleFile(VegaInputFile.java:262)",
@@ -1679,8 +1721,8 @@
     }
   ],
   "summary": {
-    "total": 203,
-    "passed": 199,
+    "total": 209,
+    "passed": 205,
     "failed": 0,
     "skipped": 4
   }

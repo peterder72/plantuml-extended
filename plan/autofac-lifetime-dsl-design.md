@@ -1,6 +1,6 @@
 # Autofac Lifetime Composition DSL — Design Specification
 
-**Status:** Implemented native PlantUML diagram · **Revision:** 1.0
+**Status:** Implemented native PlantUML diagram · **Revision:** 1.1
 **Diagram type:** `@startautofac` / `@endautofac`
 **Target:** JVM SVG/PNG, browser TeaVM SVG, and headless TeaVM SVG. A diagram engine, **not an Autofac solver**.
 
@@ -31,9 +31,15 @@ Structural validation rejects duplicate/unknown/ambiguous references, impossible
 
 Missing composition and unclosed composition are distinct errors. An unclosed block's message includes its opening source line, even after leading comments. For EOF-only errors, the structured error position still follows PlantUML's common factory; it need not equal that opener line.
 
-Styles use normal `<style> autofacDiagram { ... } </style>` inheritance, including `autofacLifetime`, `autofacConstruction`, `autofacResolve`, `autofacFailure`, `autofacDispose`, `autofacModule`, `autofacWarning`. Shape/text distinguishes outcomes without relying solely on color. SVG groups have stable `af-*` IDs and source locations.
+Styles use normal `<style> autofacDiagram { ... } </style>` inheritance, including `autofacLifetime`, `autofacChildLifetime`, `autofacConstruction`, `autofacChildConstruction`, `autofacHeading`, `autofacMuted`, `autofacDetail`, `autofacResolve`, `autofacFailure`, `autofacDispose`, `autofacModule`, `autofacWarning`. Shape/text distinguishes outcomes without relying solely on color. SVG groups have stable `af-*` IDs and source locations.
 
 Runnable examples and SVG references: [`baseline`](../src/test/resources/vega/autofac/baseline.puml), [`module outcomes`](../src/test/resources/vega/autofac/module-outcomes.puml), [`recursion`](../src/test/resources/vega/autofac/recursion.puml), [`independent ends / unordered events`](../src/test/resources/vega/autofac/orphan-parallel.puml).
+
+Visual hierarchy follows the supplied reference: each rounded, closed lifetime envelope has a bold scope heading, a shaded **Construction** compartment and a separate **ACTIVE** track. Child construction uses a blue compartment within its parent lifetime. A track arrow plus `remains active` status denotes an unspecified end; a terminal cap denotes explicit disposal. The border is a containment frame, not the precise temporal endpoint.
+
+Request markers have a short action above and the requested service/key below; generated disposal IDs and repeated DSL sentences are not displayed. Provenance curves stay in the local parent/child gap, with labelled badges. Dotted binding lookups use one legend key rather than repeated captions. Explicit/template calls have separate locally measured routing strips. Expanded detail cards show provided facts, retain unknowns as unspecified, and use measured shelf placement near their targets instead of an unbounded left-hand stack. Standalone SVGs paint their configured canvas background; intentionally transparent backgrounds remain transparent.
+
+Structural lifecycle warnings are shown once through PlantUML's common warning banner, not repeated as detail cards. Unordered-region borders and titles reserve space around lifetime/phase headings and nested event rows; these regions do not change causal order or extend actual lifetime endpoints.
 
 Implementation: `src/main/java/net/sourceforge/plantuml/autofac/`. Both native builders register the same factory and share the positioned parser, structural binder and measured `UGraphic` renderer. No Graphviz, .NET, AWT rendering dependency or delegate execution is used by the shared diagram code. New source remains Java 8-compatible; the repository's current OpenPDF dependency requires JDK 21 to build.
 
@@ -48,6 +54,25 @@ java -cp build/classes/java/main net.sourceforge.plantuml.teavm.EmbeddedResource
 ```
 
 Browser and headless TeaVM are separate compilations; both require runtime verification. Browser logical dimensions retain the engine's 8192-unit ceiling. The sections below provide design rationale and Autofac background; this implemented contract governs executable behavior.
+
+### Autofac npm prerelease
+
+Build with the existing Nix tooling and JDK 21:
+
+```sh
+./gradlew --offline npmPackage -Pfast \
+  -PnpmName=@peterder72/plantuml-core \
+  -PnpmVersion=1.2026.7-autofac.1 \
+  -PnpmTag=autofac \
+  -PnpmRepository=https://github.com/peterder72/plantuml-extended
+npm publish ./build/npm-plantuml --tag autofac --access public \
+  --registry=https://registry.npmjs.org/
+```
+
+Push the source commit to `feature/autofac` before publishing. Do not create a Git release tag: this fork's CI has broad tag-creation triggers. The npm `autofac` dist-tag is independent of Git tags and must not move `latest` or `beta`. The generated package records its selected publishing tag in `publishConfig`, includes the GPL license, and links to this fork's source.
+
+The browser bundle can be loaded directly or tested through the live editor's local package alias. For Vite production builds, preserve the generated TeaVM code with `build.minify: false`; re-minification has produced invalid JavaScript (`Undefined label`). The package README records this integration constraint.
+
 
 ## 1. Purpose
 
@@ -298,13 +323,13 @@ This is the smallest representative diagram: System exists, Request begins with 
 
 ![Example lifetime envelope diagram](autofac-lifetime-example.svg)
 
-- **Outer envelope:** System/root scope, from its build through its observed lifespan (right edge open if no disposal event).
-- **Nested envelope:** child/request scope, with left boundary at creation, right boundary at disposal.
+- **Outer envelope:** closed System/root containment frame. A track arrow and `remains active` status show that disposal was not specified.
+- **Nested envelope:** closed child/request frame with an explicit lifetime heading, parent/tag subtitle, shaded construction and active track.
 - **Construction compartment:** shaded leading region of *each* scope, listing direct registrations and installed modules. It ends before the scope's active events.
 - **Active track:** horizontal line carrying resolution/invocation/disposal markers.
-- **Module provenance link:** labeled, dotted connection from System's `resolve RequestModule → module1` event into Request's construction compartment; this is *not* a child scope edge or an ordinary service dependency.
+- **Module provenance link:** labelled, curved dashed connection from System's module resolve event to the child envelope's top boundary above construction; this is *not* a child scope edge or an ordinary service dependency.
 - **Registration provenance:** module-contributed entries are grouped under `install module1` (expandable); direct registration entries remain separate.
-- **End cap:** a double-slash/terminal marker plus `dispose` label closes a scope; an arrow/open edge means the end was not specified.
+- **End cap:** a double-slash/terminal marker plus `Dispose` label ends the active track. The envelope retains visual padding; its border must not be interpreted as an additional lifecycle event.
 
 **Horizontal coordinate:** causal/event order; not proportional elapsed time by default. **Vertical coordinate:** containment/hierarchy, not call depth. Siblings get separate non-overlapping bands. Child envelopes may be displayed inside an outer envelope or in aligned nested lanes where depth would make the interior illegible; the parent relationship must remain explicit.
 
@@ -312,7 +337,7 @@ This is the smallest representative diagram: System exists, Request begins with 
 
 | Glyph / style | Element | Required text |
 |---|---|---|
-| Shaded header | Scope construction | Scope name, tag (if any), registrations/module count |
+| Shaded compartment | Scope construction | Explicit Construction heading, registrations and sealed-phase footer |
 | `T → Impl` | Type/constructor registration | Service and implementation |
 | `ƒ T → delegate` | Delegate registration | Service and factory/body label |
 | `T [key]` | Keyed registration or resolve | Requested type and key |
@@ -321,9 +346,9 @@ This is the smallest representative diagram: System exists, Request begins with 
 | Solid dot `●` | Successful activation/result | Instance alias or identity if expanded |
 | Repeat arrow `↩` | Reused instance | Instance identity and sharing scope |
 | Cross `×` | Failed resolve | Error summary/category |
-| Thick curved loop | Recursion | Cycle participants and inferred/observed label |
-| Dashed connector | Explicit cross-scope call or module provenance | Connection *type must be labeled* |
-| Faint dotted connector | Inherited lookup (expanded mode only) | Registration selected |
+| Thick curved loop | Recursion | Authored cycle participants and confidence |
+| Dashed connector with badge | Explicit/template call or module provenance | Connection type labelled separately from phase headings |
+| Faint dotted connector | Authored selected-binding lookup | One legend key; selected registration in expanded details |
 | Terminal stroke `//` | Dispose scope | Scope identifier |
 | Nested object boxes | Decorator instance chain (expanded) | Outer → inner order |
 
@@ -543,10 +568,10 @@ The shared native `UGraphic` renderer exports JVM SVG/PNG, browser TeaVM SVG and
 
 1. Assign each lifetime a vertical band nested under its parent; allocate sibling bands by stable declaration order.
 2. Establish an x-order from creation, resolve, module-installation prerequisites, factory invocations, and disposal constraints.
-3. Render construction header anchored at the scope's birth boundary; keep its registrations within the header even if module provenance originates earlier.
-4. Place normal events on that scope's active track; use small local offsets for collisions, never change causal order.
-5. Add module-provenance links and explicit cross-scope call bridges; route them outside dense registration text.
-6. Add failure/recursion callouts and expandable instance/decorator traces.
+3. Render distinct lifetime, construction and active headings; keep registrations in the shaded construction compartment anchored at birth.
+4. Center action/service/detail labels around active-track markers and measure separate parallel subtracks without changing causal order.
+5. Route provenance through the local parent/child gap, above child headings; reserve local call strips below phase headings rather than a global overhead routing area.
+6. Place titled failure/instance/decorator detail cards in measured shelves near their targets, showing supplied facts without repeated unknown rows.
 7. When events are only partially ordered, group/label them as unordered; avoid fabricated elapsed durations.
 
 ## 10. Acceptance scenarios / test matrix

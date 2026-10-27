@@ -339,6 +339,29 @@ mindmapDiagram {
 
 autofacDiagram {
 	Shadowing 0
+	FontColor #334155
+	autofacHeading {
+		FontStyle bold
+	}
+	autofacMuted {
+		FontColor #64748B
+		LineColor #94A3B8
+	}
+	autofacChildLifetime {
+		BackgroundColor #FFFFFF
+		LineColor #64748B
+		LineThickness 1.5
+	}
+	autofacChildConstruction {
+		BackgroundColor #E0F2FE
+		LineColor #7CB7D8
+		LineThickness 1.5
+	}
+	autofacDetail {
+		BackgroundColor #F8FAFC
+		LineColor #CBD5E1
+		LineThickness 1
+	}
 	autofacLifetime {
 		BackgroundColor #F8FAFC
 		LineColor #94A3B8
@@ -366,7 +389,7 @@ autofacDiagram {
 		LineThickness 2
 	}
 	autofacModule {
-		BackgroundColor transparent
+		BackgroundColor #CCFBF1
 		LineColor #0F766E
 		LineThickness 1.5
 	}
@@ -600,6 +623,23 @@ root {
 }
 
 autofacDiagram {
+	FontColor #E2E8F0
+	autofacMuted {
+		FontColor #A8B8CD
+		LineColor #7E90A7
+	}
+	autofacChildLifetime {
+		BackgroundColor #182331
+		LineColor #94A3B8
+	}
+	autofacChildConstruction {
+		BackgroundColor #173B52
+		LineColor #6199BA
+	}
+	autofacDetail {
+		BackgroundColor #202630
+		LineColor #526174
+	}
 	autofacLifetime {
 		BackgroundColor #202630
 		LineColor #94A3B8
@@ -620,6 +660,7 @@ autofacDiagram {
 		LineColor #FBBF24
 	}
 	autofacModule {
+		BackgroundColor #134E4A
 		LineColor #5EEAD4
 	}
 	autofacWarning {

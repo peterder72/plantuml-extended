@@ -60,7 +60,7 @@ Browser and headless TeaVM are separate compilations; both require runtime verif
 Build with the existing Nix tooling and JDK 21:
 
 ```sh
-./gradlew --offline npmPackage -Pfast \
+./gradlew --offline :npmPackage -Pfast \
   -PnpmName=@peterder72/plantuml-core \
   -PnpmVersion=1.2026.7-autofac.1 \
   -PnpmTag=autofac \

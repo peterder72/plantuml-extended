@@ -828,7 +828,7 @@ tasks.register<Zip>("teavmZip") {
 // the tarball above 100 MB. Those remain available from the project site.
 //
 // Usage:
-//   gradlew npmPackage           # assemble build/npm-plantuml
+//   gradlew :npmPackage          # assemble build/npm-plantuml only
 //   cd build/npm-plantuml
 //   npm publish --access public  # uses the generated publishConfig.tag
 //
@@ -1010,8 +1010,8 @@ tasks.register("npmPackage") {
 
 			## Bundlers
 
-			The TeaVM engine is already optimized. When bundling this prerelease with
-			Vite, use `build: { minify: false }`: production re-minification has produced
+			The TeaVM engine is already optimized. When bundling it with Vite,
+			use `build: { minify: false }`: production re-minification has produced
 			invalid JavaScript (`Undefined label`). Direct browser imports do not need
 			this workaround.
 

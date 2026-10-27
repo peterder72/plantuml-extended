@@ -1,102 +1,78 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="AUTOFAC" height="880px" preserveAspectRatio="none" style="width:855px;height:880px;background:#FFFFFF;" version="1.1" viewBox="0 0 855 880" width="855px" zoomAndPan="magnify">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="AUTOFAC" height="520px" preserveAspectRatio="none" style="width:1124px;height:520px;background:#FFFFFF;" version="1.1" viewBox="0 0 1124 520" width="1124px" zoomAndPan="magnify">
   <defs/>
   <g font-family="sans-serif" lengthAdjust="spacing">
-    <g class="title">
-      <text fill="#000" font-size="14" font-weight="700" textLength="209.388" x="322.263" y="30.889">Declared recursive cross-scope call</text>
+    <g class="title" data-source-line="1">
+      <text fill="#000" font-size="14" font-weight="700" textLength="168.613" x="476.756" y="25.889">Cross-scope factory re-entry</text>
     </g>
-    <rect fill="#FFF" height="824" width="834.913" x="10" y="45"/>
-    <g class="autofac-scope" data-source-line="2" id="af-scope-system">
-      <rect fill="#F8FAFC" height="497" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="802.913" x="26" y="61"/>
-      <g class="autofac-event" data-source-line="2" id="af-event-birth-system">
-        <text fill="#334155" font-size="14" font-weight="700" textLength="120.663" x="42" y="91">SYSTEM LIFETIME</text>
-        <text fill="#64748B" font-size="12" textLength="74.025" x="738.888" y="89">remains active</text>
-      </g>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="108.325" x="284.813" y="130">ACTIVE SYSTEM</text>
-      <line style="stroke:#94A3B8;stroke-width:2;" x1="268.813" x2="812.912" y1="184" y2="184"/>
-      <polygon fill="#94A3B8" points="812.913,184,804.913,188,804.913,180" style="stroke:#94A3B8;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+    <g class="autofac-scope" data-source-line="3" id="af-scope-system">
+      <rect fill="#F8FAFC" height="388" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="1041.125" x="37" y="56"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="46.637" x="53" y="82.889">System</text>
+      <line style="stroke:#94A3B8;stroke-width:1.5;stroke-dasharray:3,4;" x1="372.6" x2="412.6" y1="146" y2="146"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="412.6" x2="1062.125" y1="146" y2="146"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="1062.125" x2="1054.125" y1="146" y2="142"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="1062.125" x2="1054.125" y1="146" y2="150"/>
     </g>
     <g class="autofac-scope" data-source-line="7" id="af-scope-request">
-      <rect fill="#FFF" height="285" rx="6" ry="6" style="stroke:#64748B;stroke-width:1.5;" width="520.1" x="292.813" y="257"/>
-      <g class="autofac-event" data-source-line="7" id="af-event-birth-request">
-        <text fill="#334155" font-size="14" font-weight="700" textLength="130.813" x="308.813" y="287">REQUEST LIFETIME</text>
-        <text fill="#64748B" font-size="12" textLength="72.675" x="308.813" y="305">child of system</text>
-        <text fill="#64748B" font-size="12" textLength="74.025" x="722.888" y="285">remains active</text>
-      </g>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="118.475" x="484.863" y="344">ACTIVE REQUEST</text>
-      <line style="stroke:#94A3B8;stroke-width:2;" x1="468.863" x2="796.913" y1="447" y2="447"/>
-      <polygon fill="#94A3B8" points="796.913,447,788.913,451,788.913,443" style="stroke:#94A3B8;stroke-width:2;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <rect fill="#FFF" height="178" rx="6" ry="6" style="stroke:#64748B;stroke-width:1.5;" width="609.525" x="452.6" y="250"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="52.15" x="468.6" y="276.889">Request</text>
+      <text fill="#64748B" font-size="14" textLength="87.15" x="468.6" y="294.889">child of System</text>
+      <line style="stroke:#7CB7D8;stroke-width:1.5;stroke-dasharray:3,4;" x1="587.75" x2="627.75" y1="342" y2="342"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="627.75" x2="1046.125" y1="342" y2="342"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="1046.125" x2="1038.125" y1="342" y2="338"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="1046.125" x2="1038.125" y1="342" y2="346"/>
     </g>
-    <g class="autofac-construction" data-source-line="2" id="af-construction-system">
-      <rect fill="#E2E8F0" height="111" rx="5" ry="5" style="stroke:#94A3B8;stroke-width:1.5;" width="226.813" x="42" y="106"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="78.575" x="54" y="130">Construction</text>
-      <line style="stroke:#94A3B8;stroke-width:1;" x1="58" x2="252.813" y1="140" y2="140"/>
-      <g class="autofac-registration" data-source-line="3" id="af-reg-system.risky">
-        <rect fill="none" height="6" style="stroke:#94A3B8;stroke-width:1.5;" width="6" x="42" y="150"/>
-        <text fill="#334155" font-size="14" textLength="186.813" x="54" y="159">IFoo → delegate { declared calls }</text>
-        <text fill="#64748B" font-size="12" textLength="31.425" x="54" y="176">single</text>
+    <g class="autofac-group" data-source-line="12" id="af-group-.af-6-system">
+      <rect fill="none" height="128" rx="2" ry="2" style="stroke:#64748B;stroke-width:1;" width="250.044" x="786.081" y="65"/>
+      <polygon fill="#E2E8F0" points="786.081,65,981.869,65,981.869,83,973.869,91,786.081,91" style="stroke:#64748B;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="175.788" x="794.081" y="80.889">loop  while the factory re-enters</text>
+    </g>
+    <g class="autofac-group autofac-group-continuation" data-source-line="12" id="af-group-.af-6-request">
+      <rect fill="none" height="128" rx="2" ry="2" style="stroke:#64748B;stroke-width:1;" width="250.044" x="786.081" y="261"/>
+      <line style="stroke:#64748B;stroke-width:1;stroke-dasharray:3,4;" x1="790.081" x2="790.081" y1="193" y2="261"/>
+    </g>
+    <g class="autofac-construction" data-source-line="3" id="af-construction-system">
+      <rect fill="#E2E8F0" height="96" rx="4" ry="4" style="stroke:#94A3B8;stroke-width:1.5;" width="319.6" x="53" y="98"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="78.575" x="65" y="120.889">Construction</text>
+      <line style="stroke:#94A3B8;stroke-width:1.5;" x1="65" x2="360.6" y1="132" y2="132"/>
+      <g class="autofac-registration" data-source-line="4" id="af-reg-system.risky">
+        <rect fill="none" height="6" style="stroke:#94A3B8;stroke-width:1.5;" width="6" x="65" y="143"/>
+        <text fill="#000" font-size="14" textLength="271.6" x="77" y="148.889">risky: ƒ IFoo → ctx =&gt; request.Resolve&lt;IFoo&gt;()</text>
+        <text fill="#64748B" font-size="14" textLength="36.663" x="77" y="166.889">single</text>
       </g>
-      <text fill="#64748B" font-size="12" textLength="136.05" x="54" y="204">sealed before active events</text>
     </g>
     <g class="autofac-construction" data-source-line="7" id="af-construction-request">
-      <rect fill="#E0F2FE" height="94" rx="5" ry="5" style="stroke:#7CB7D8;stroke-width:1.5;" width="160.05" x="308.813" y="320"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="78.575" x="320.813" y="344">Construction</text>
-      <line style="stroke:#7CB7D8;stroke-width:1;" x1="324.813" x2="452.863" y1="354" y2="354"/>
-      <g class="autofac-construction" data-source-line="7" id="af-empty-request">
-        <text fill="#334155" font-size="14" textLength="94.15" x="320.813" y="373">No registrations</text>
-      </g>
-      <text fill="#64748B" font-size="12" textLength="136.05" x="320.813" y="401">sealed before active events</text>
+      <rect fill="#E0F2FE" height="64" rx="4" ry="4" style="stroke:#7CB7D8;stroke-width:1.5;" width="119.15" x="468.6" y="310"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="78.575" x="480.6" y="332.889">Construction</text>
+      <line style="stroke:#7CB7D8;stroke-width:1.5;" x1="480.6" x2="575.75" y1="344" y2="344"/>
     </g>
-    <g class="autofac-call" data-source-line="4" id="af-reg-system.risky-call-0">
-      <path d="M268.813,153.5 L268.813,177 C268.813,169 268.813,169 276.813,169 L476.863,169 C468.863,169 468.863,169 468.863,177 L468.863,447" fill="none" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;"/>
-      <polygon fill="#0F766E" points="468.863,447,464.863,439,472.863,439" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
-      <rect fill="#CCFBF1" height="25" rx="3" ry="3" style="stroke:#0F766E;stroke-width:0.5;" width="118.663" x="270.813" y="145"/>
-      <text fill="#334155" font-size="14" textLength="106.663" x="276.813" y="163">declared call: IFoo</text>
+    <g class="autofac-message" data-source-line="11" id="af-message-.af-5">
+      <path d="M691.081,342 L691.081,146" fill="none" style="stroke:#0F766E;stroke-width:1.5;"/>
+      <polygon fill="#0F766E" points="691.081,146,695.081,155,687.081,155" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <rect fill="#F8FAFC" height="17" rx="1.5" ry="1.5" width="71" x="698.081" y="152"/>
+      <text fill="#000" font-size="13" textLength="65" x="701.081" y="164.111">Invoke risky</text>
     </g>
-    <g class="autofac-lookup" data-source-line="8" id="af-lookup-trigger">
-      <path d="M572.513,386 L572.513,147 C572.513,139 572.513,139 580.513,139 L276.813,139 C268.813,139 268.813,139 268.813,147 L268.813,153.5" fill="none" style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:1,5;"/>
-      <polygon fill="#94A3B8" points="268.813,153.5,264.813,145.5,272.813,145.5" style="stroke:#94A3B8;stroke-width:0.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+    <g class="autofac-message" data-source-line="13" id="af-message-.af-7">
+      <path d="M808.081,146 L808.081,342" fill="none" style="stroke:#0F766E;stroke-width:1.5;"/>
+      <polygon fill="#0F766E" points="808.081,342,804.081,333,812.081,333" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <rect fill="#F8FAFC" height="17" rx="1.5" ry="1.5" width="79.044" x="815.081" y="152"/>
+      <text fill="#000" font-size="13" textLength="73.044" x="818.081" y="164.111">Resolve IFoo</text>
     </g>
-    <g class="autofac-call" data-source-line="15" id="af-call-again">
-      <path d="M572.513,447 L572.513,379 C572.513,371 572.513,371 580.513,371 L720.538,371 C712.538,371 712.538,371 712.538,379 L712.538,447" fill="none" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;"/>
-      <polygon fill="#0F766E" points="712.538,447,708.538,439,716.538,439" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
-      <rect fill="#CCFBF1" height="25" rx="3" ry="3" style="stroke:#0F766E;stroke-width:0.5;" width="75.962" x="470.863" y="347"/>
-      <text fill="#334155" font-size="14" textLength="63.962" x="476.863" y="365">explicit call</text>
+    <g class="autofac-message" data-source-line="14" id="af-message-.af-8">
+      <path d="M921.125,342 L921.125,146" fill="none" style="stroke:#0F766E;stroke-width:1.5;"/>
+      <polygon fill="#0F766E" points="921.125,146,925.125,155,917.125,155" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <rect fill="#F8FAFC" height="17" rx="1.5" ry="1.5" width="71" x="928.125" y="152"/>
+      <text fill="#000" font-size="13" textLength="65" x="931.125" y="164.111">Invoke risky</text>
     </g>
-    <g class="autofac-event" data-source-line="8" id="af-event-trigger">
-      <ellipse cx="572.513" cy="447" fill="#FFF" rx="6" ry="6" style="stroke:#B91C1C;stroke-width:2;"/>
-      <path d="M616.513,390 C616.513,408 528.513,408 528.513,390 C528.513,385 534.513,385 540.513,390" fill="none" style="stroke:#B91C1C;stroke-width:3;"/>
-      <line style="stroke:#B91C1C;stroke-width:3;" x1="528.513" x2="525.513" y1="390" y2="397"/>
-      <line style="stroke:#B91C1C;stroke-width:3;" x1="528.513" x2="534.513" y1="390" y2="394"/>
-      <text fill="#B91C1C" font-size="14" textLength="45.15" x="549.938" y="430">resolve</text>
-      <text fill="#334155" font-size="14" textLength="28" x="558.513" y="475">IFoo</text>
-      <text fill="#64748B" font-size="12" textLength="92.1" x="498.863" y="493">Recursive resolve</text>
-      <text fill="#64748B" font-size="12" textLength="130.05" x="498.863" y="508">inherited · binding: system</text>
-      <text fill="#64748B" font-size="12" textLength="147.3" x="498.863" y="523">uncertain · risk stackOverflow</text>
+    <g class="autofac-reference" data-source-line="16" id="af-reference-.af-10">
+      <path d="M691.081,342 L595.75,342 L595.75,306 L384.6,306 L384.6,342 L384.6,145 L372.6,145" fill="none" style="stroke:#64748B;stroke-width:1;stroke-dasharray:1,4;"/>
+      <polygon fill="#64748B" points="372.6,145,381.6,141,381.6,149" style="stroke:#64748B;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:10;"/>
     </g>
-    <g class="autofac-event" data-source-line="15" id="af-event-again">
-      <ellipse cx="712.538" cy="447" fill="#FFF" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
-      <text fill="#334155" font-size="14" textLength="21.088" x="701.994" y="430">call</text>
-      <text fill="#334155" font-size="14" textLength="28" x="698.538" y="475">IFoo</text>
-      <text fill="#64748B" font-size="12" textLength="60.75" x="682.163" y="493">unspecified</text>
+    <g class="autofac-event autofac-event" data-source-line="10" id="af-event-trigger">
+      <ellipse cx="691.081" cy="342" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="78.663" x="651.75" y="366.889">Resolve IFoo</text>
     </g>
-    <g class="autofac-diagnostic" data-source-line="8" id="af-diagnostic-trigger">
-      <line style="stroke:#CBD5E1;stroke-width:1;stroke-dasharray:1,4;" x1="572.513" x2="572.513" y1="570" y2="582"/>
-      <line style="stroke:#CBD5E1;stroke-width:1;stroke-dasharray:1,4;" x1="572.513" x2="468.513" y1="582" y2="582"/>
-      <rect fill="#F8FAFC" height="196" rx="5" ry="5" style="stroke:#CBD5E1;stroke-width:1;" width="240" x="452.513" y="582"/>
-      <line style="stroke:#B91C1C;stroke-width:3;" x1="453.513" x2="453.513" y1="594" y2="766"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="72.275" x="468.513" y="608">trigger · IFoo</text>
-      <text fill="#64748B" font-size="12" textLength="150.15" x="468.513" y="629">Recursion · Recursive resolve</text>
-      <text fill="#64748B" font-size="12" textLength="175.275" x="468.513" y="644">Selected registration: system.risky</text>
-      <text fill="#64748B" font-size="12" textLength="96" x="468.513" y="659">Activator: delegate</text>
-      <text fill="#64748B" font-size="12" textLength="102" x="468.513" y="674">Risk: stackOverflow</text>
-      <text fill="#64748B" font-size="12" textLength="174" x="468.513" y="689">Cycle: risky → request.IFoo → risky</text>
-      <text fill="#64748B" font-size="12" textLength="113.4" x="468.513" y="704">Confidence: uncertain</text>
-      <text fill="#64748B" font-size="12" textLength="115.95" x="468.513" y="719">Other facts unspecified</text>
-    </g>
-    <g class="autofac-legend" id="af-legend">
-      <text fill="#64748B" font-size="12" textLength="407.1" x="26" y="814">□ registration   ○ unspecified   ● success   ↶ reused   × failure   // disposal   ↩ authored cycle</text>
-      <text fill="#64748B" font-size="12" textLength="112.8" x="26" y="829">Dotted: binding lookup</text>
-      <text fill="#64748B" font-size="12" textLength="107.4" x="721.513" y="850">Logical event order →</text>
+    <g class="autofac-order" id="af-order">
+      <text fill="#64748B" font-size="14" textLength="125.3" x="976.825" y="494.889">Logical event order →</text>
     </g>
   </g>
 </svg>

@@ -1,140 +1,124 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="AUTOFAC" height="1149px" preserveAspectRatio="none" style="width:1018px;height:1149px;background:#FFFFFF;" version="1.1" viewBox="0 0 1018 1149" width="1018px" zoomAndPan="magnify">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentStyleType="text/css" data-diagram-type="AUTOFAC" height="774px" preserveAspectRatio="none" style="width:2025px;height:774px;background:#FFFFFF;" version="1.1" viewBox="0 0 2025 774" width="2025px" zoomAndPan="magnify">
   <defs/>
   <g font-family="sans-serif" lengthAdjust="spacing">
-    <g class="title">
-      <text fill="#000" font-size="14" font-weight="700" textLength="246.663" x="385.012" y="30.889">Independent lifetime ends and partial order</text>
+    <g class="title" data-source-line="1">
+      <text fill="#000" font-size="14" font-weight="700" textLength="270.813" x="876.534" y="25.889">Independent lifetime ends and native branches</text>
     </g>
-    <rect fill="#FFC" height="35" rx="2.5" ry="2.5" style="stroke:#FD8;stroke-width:3;" width="987.687" x="13" y="48"/>
-    <text fill="#000" font-family="monospace" font-size="10" textLength="339.812" x="20" y="57">undisposedChild: Child lifetime 'requestA' remains open when 'system' is disposed</text>
-    <text fill="#000" font-family="monospace" font-size="10" textLength="339.812" x="20" y="77">undisposedChild: Child lifetime 'requestB' remains open when 'system' is disposed</text>
-    <rect fill="#FFF" height="1053" width="997.687" x="10" y="85"/>
-    <g class="autofac-scope" data-source-line="2" id="af-scope-system">
-      <rect fill="#F8FAFC" height="165" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="682.937" x="26" y="101"/>
-      <g class="autofac-event" data-source-line="2" id="af-event-birth-system">
-        <text fill="#334155" font-size="14" font-weight="700" textLength="120.663" x="42" y="131">SYSTEM LIFETIME</text>
-        <text fill="#64748B" font-size="12" textLength="48.075" x="644.862" y="129">disposed</text>
-      </g>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="108.325" x="218.05" y="170">ACTIVE SYSTEM</text>
-      <line style="stroke:#94A3B8;stroke-width:2;" x1="202.05" x2="661.606" y1="236" y2="236"/>
+    <rect fill="#FFC" height="35" rx="2.5" ry="2.5" style="stroke:#FD8;stroke-width:3;" width="2004.881" x="8" y="43"/>
+    <text fill="#000" font-family="monospace" font-size="10" textLength="356.937" x="15" y="52">undisposedChild: Lifetime 'requestA' remains independently open when 'system' ends</text>
+    <text fill="#000" font-family="monospace" font-size="10" textLength="356.937" x="15" y="72">undisposedChild: Lifetime 'requestB' remains independently open when 'system' ends</text>
+    <g class="autofac-scope" data-source-line="3" id="af-scope-system">
+      <rect fill="#F8FAFC" height="144" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:1.5;" width="1019.712" x="37" y="96"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="46.637" x="53" y="122.889">System</text>
+      <line style="stroke:#94A3B8;stroke-width:1.5;stroke-dasharray:3,4;" x1="165" x2="205" y1="170" y2="170"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="205" x2="1040.712" y1="170" y2="170"/>
     </g>
-    <g class="autofac-scope" data-source-line="4" id="af-scope-requestA">
-      <rect fill="#FFF" height="322" rx="6" ry="6" style="stroke:#64748B;stroke-width:1.5;" width="678.975" x="226.05" y="306"/>
-      <g class="autofac-event" data-source-line="4" id="af-event-birth-requestA">
-        <text fill="#334155" font-size="14" font-weight="700" textLength="140.175" x="242.05" y="336">REQUESTA LIFETIME</text>
-        <text fill="#64748B" font-size="12" textLength="72.675" x="242.05" y="354">child of system</text>
-        <text fill="#64748B" font-size="12" textLength="48.075" x="840.95" y="334">disposed</text>
-      </g>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="127.837" x="418.1" y="393">ACTIVE REQUESTA</text>
-      <line style="stroke:#94A3B8;stroke-width:2;" x1="402.1" x2="857.694" y1="459" y2="459"/>
-      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="30" y1="258" y2="314"/>
-      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="226.05" y1="314" y2="314"/>
+    <g class="autofac-scope" data-source-line="5" id="af-scope-requestA">
+      <rect fill="#FFF" height="248" rx="6" ry="6" style="stroke:#64748B;stroke-width:1.5;" width="1520.219" x="245" y="248"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="61.512" x="261" y="274.889">Request A</text>
+      <text fill="#64748B" font-size="14" textLength="87.15" x="261" y="292.889">child of System</text>
+      <line style="stroke:#7CB7D8;stroke-width:1.5;stroke-dasharray:3,4;" x1="380.15" x2="623.3" y1="340" y2="340"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="623.3" x2="1749.219" y1="340" y2="340"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="37" x2="19" y1="104" y2="104"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="19" x2="19" y1="104" y2="256"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="19" x2="245" y1="256" y2="256"/>
     </g>
-    <g class="autofac-scope" data-source-line="5" id="af-scope-requestB">
-      <rect fill="#FFF" height="218" rx="6" ry="6" style="stroke:#64748B;stroke-width:1.5;" width="765.637" x="226.05" y="668"/>
-      <g class="autofac-event" data-source-line="5" id="af-event-birth-requestB">
-        <text fill="#334155" font-size="14" font-weight="700" textLength="140.175" x="242.05" y="698">REQUESTB LIFETIME</text>
-        <text fill="#64748B" font-size="12" textLength="72.675" x="242.05" y="716">child of system</text>
-        <text fill="#64748B" font-size="12" textLength="48.075" x="927.612" y="696">disposed</text>
-      </g>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="127.837" x="418.1" y="755">ACTIVE REQUESTB</text>
-      <line style="stroke:#94A3B8;stroke-width:2;" x1="402.1" x2="944.356" y1="821" y2="821"/>
-      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="30" y1="258" y2="676"/>
-      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="30" x2="226.05" y1="676" y2="676"/>
+    <g class="autofac-scope" data-source-line="6" id="af-scope-requestB">
+      <rect fill="#FFF" height="162" rx="6" ry="6" style="stroke:#64748B;stroke-width:1.5;" width="1495.731" x="436.15" y="520"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="61.512" x="452.15" y="546.889">Request B</text>
+      <text fill="#64748B" font-size="14" textLength="87.15" x="452.15" y="564.889">child of System</text>
+      <line style="stroke:#7CB7D8;stroke-width:1.5;stroke-dasharray:3,4;" x1="571.3" x2="623.3" y1="612" y2="612"/>
+      <line style="stroke:#64748B;stroke-width:2;" x1="623.3" x2="1915.881" y1="612" y2="612"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="37" x2="19" y1="104" y2="104"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="19" x2="19" y1="104" y2="528"/>
+      <line style="stroke:#94A3B8;stroke-width:1;stroke-dasharray:3,3;" x1="19" x2="436.15" y1="528" y2="528"/>
     </g>
-    <g class="autofac-construction" data-source-line="2" id="af-construction-system">
-      <rect fill="#E2E8F0" height="94" rx="5" ry="5" style="stroke:#94A3B8;stroke-width:1.5;" width="160.05" x="42" y="146"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="78.575" x="54" y="170">Construction</text>
-      <line style="stroke:#94A3B8;stroke-width:1;" x1="58" x2="186.05" y1="180" y2="180"/>
-      <g class="autofac-construction" data-source-line="2" id="af-empty-system">
-        <text fill="#334155" font-size="14" textLength="94.15" x="54" y="199">No registrations</text>
-      </g>
-      <text fill="#64748B" font-size="12" textLength="136.05" x="54" y="227">sealed before active events</text>
+    <g class="autofac-group" data-source-line="8" id="af-group-.af-5">
+      <rect fill="none" height="126" rx="2" ry="2" style="stroke:#64748B;stroke-width:1;" width="306.475" x="601.3" y="270"/>
+      <polygon fill="#E2E8F0" points="601.3,270,703.025,270,703.025,288,695.025,296,601.3,296" style="stroke:#64748B;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="81.725" x="609.3" y="285.889">par  Request A</text>
     </g>
-    <g class="autofac-construction" data-source-line="4" id="af-construction-requestA">
-      <rect fill="#E0F2FE" height="94" rx="5" ry="5" style="stroke:#7CB7D8;stroke-width:1.5;" width="160.05" x="242.05" y="369"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="78.575" x="254.05" y="393">Construction</text>
-      <line style="stroke:#7CB7D8;stroke-width:1;" x1="258.05" x2="386.1" y1="403" y2="403"/>
-      <g class="autofac-construction" data-source-line="4" id="af-empty-requestA">
-        <text fill="#334155" font-size="14" textLength="94.15" x="254.05" y="422">No registrations</text>
-      </g>
-      <text fill="#64748B" font-size="12" textLength="136.05" x="254.05" y="450">sealed before active events</text>
+    <g class="autofac-group" data-source-line="12" id="af-group-.af-7">
+      <rect fill="none" height="126" rx="2" ry="2" style="stroke:#64748B;stroke-width:1;" width="306.475" x="601.3" y="542"/>
+      <polygon fill="#E2E8F0" points="601.3,542,708.537,542,708.537,560,700.537,568,601.3,568" style="stroke:#64748B;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <text fill="#000" font-size="14" textLength="87.238" x="609.3" y="557.889">else Request B</text>
     </g>
-    <g class="autofac-construction" data-source-line="5" id="af-construction-requestB">
-      <rect fill="#E0F2FE" height="94" rx="5" ry="5" style="stroke:#7CB7D8;stroke-width:1.5;" width="160.05" x="242.05" y="731"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="78.575" x="254.05" y="755">Construction</text>
-      <line style="stroke:#7CB7D8;stroke-width:1;" x1="258.05" x2="386.1" y1="765" y2="765"/>
-      <g class="autofac-construction" data-source-line="5" id="af-empty-requestB">
-        <text fill="#334155" font-size="14" textLength="94.15" x="254.05" y="784">No registrations</text>
-      </g>
-      <text fill="#64748B" font-size="12" textLength="136.05" x="254.05" y="812">sealed before active events</text>
+    <g class="autofac-construction" data-source-line="3" id="af-construction-system">
+      <rect fill="#E2E8F0" height="64" rx="4" ry="4" style="stroke:#94A3B8;stroke-width:1.5;" width="112" x="53" y="138"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="78.575" x="65" y="160.889">Construction</text>
+      <line style="stroke:#94A3B8;stroke-width:1.5;" x1="65" x2="153" y1="172" y2="172"/>
     </g>
-    <g class="autofac-unordered" data-source-line="4" id="af-unordered-parallel-1">
-      <rect fill="none" height="562" rx="6" ry="6" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;" width="196.05" x="216.05" y="273"/>
-      <text fill="#334155" font-size="14" textLength="63.787" x="224.05" y="289">unordered</text>
+    <g class="autofac-construction" data-source-line="5" id="af-construction-requestA">
+      <rect fill="#E0F2FE" height="64" rx="4" ry="4" style="stroke:#7CB7D8;stroke-width:1.5;" width="119.15" x="261" y="308"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="78.575" x="273" y="330.889">Construction</text>
+      <line style="stroke:#7CB7D8;stroke-width:1.5;" x1="273" x2="368.15" y1="342" y2="342"/>
     </g>
-    <g class="autofac-unordered" data-source-line="8" id="af-unordered-parallel-2">
-      <rect fill="none" height="478" rx="6" ry="6" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:5,4;" width="150.462" x="412.1" y="402"/>
-      <text fill="#334155" font-size="14" textLength="63.787" x="420.1" y="418">unordered</text>
+    <g class="autofac-construction" data-source-line="6" id="af-construction-requestB">
+      <rect fill="#E0F2FE" height="64" rx="4" ry="4" style="stroke:#7CB7D8;stroke-width:1.5;" width="119.15" x="452.15" y="580"/>
+      <text fill="#000" font-size="14" font-weight="700" textLength="78.575" x="464.15" y="602.889">Construction</text>
+      <line style="stroke:#7CB7D8;stroke-width:1.5;" x1="464.15" x2="559.3" y1="614" y2="614"/>
     </g>
-    <g class="autofac-event" data-source-line="8" id="af-event-a">
-      <ellipse cx="516.188" cy="459" fill="#FFF" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
-      <text fill="#334155" font-size="14" textLength="45.15" x="493.613" y="442">resolve</text>
-      <text fill="#334155" font-size="14" textLength="50.575" x="490.9" y="487">IService</text>
-      <text fill="#64748B" font-size="12" textLength="60.75" x="485.813" y="505">unspecified</text>
+    <g class="autofac-instance" data-source-line="19" id="af-instance-surviving">
+      <text fill="#000" font-size="14" textLength="105.875" x="1316.95" y="436.889">surviving : Service</text>
+      <line style="stroke:#475569;stroke-width:1.5;" x1="1316.95" x2="1422.825" y1="442" y2="442"/>
+      <line style="stroke:#475569;stroke-width:1.5;" x1="1308.95" x2="1721.219" y1="452" y2="452"/>
     </g>
-    <g class="autofac-event" data-source-line="9" id="af-event-b">
-      <ellipse cx="516.188" cy="821" fill="#FFF" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
-      <text fill="#334155" font-size="14" textLength="45.15" x="493.613" y="804">resolve</text>
-      <text fill="#334155" font-size="14" textLength="50.575" x="490.9" y="849">IService</text>
-      <text fill="#64748B" font-size="12" textLength="60.75" x="485.813" y="867">unspecified</text>
+    <g class="autofac-message" data-source-line="22" id="af-message-.af-13">
+      <path d="M1438.825,452 L1438.825,340" fill="none" style="stroke:#0F766E;stroke-width:1.5;stroke-dasharray:2,2;"/>
+      <polygon fill="#0F766E" points="1438.825,340,1442.825,349,1434.825,349" style="stroke:#0F766E;stroke-width:1.5;stroke-linejoin:miter;stroke-miterlimit:10;"/>
+      <rect fill="#F8FAFC" height="17" rx="1.5" ry="1.5" width="97.731" x="1445.825" y="387.5"/>
+      <text fill="#000" font-size="13" textLength="91.731" x="1448.825" y="399.611">returns surviving</text>
     </g>
-    <g class="autofac-event" data-source-line="10" id="af-event-c">
-      <line style="stroke:#94A3B8;stroke-width:1.5;" x1="479.813" x2="552.563" y1="563" y2="563"/>
-      <ellipse cx="516.188" cy="563" fill="#FFF" rx="6" ry="6" style="stroke:#94A3B8;stroke-width:2;"/>
-      <text fill="#334155" font-size="14" textLength="45.15" x="493.613" y="546">resolve</text>
-      <text fill="#334155" font-size="14" textLength="38.938" x="496.719" y="591">IClock</text>
-      <text fill="#64748B" font-size="12" textLength="60.75" x="485.813" y="609">unspecified</text>
+    <g class="autofac-event autofac-event" data-source-line="10" id="af-event-a">
+      <ellipse cx="697.919" cy="340" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="101.238" x="647.3" y="364.889">Resolve IService</text>
     </g>
-    <g class="autofac-event" data-source-line="12" id="af-event-dispose-system-1">
-      <line style="stroke:#B45309;stroke-width:2;" x1="655.606" x2="661.606" y1="245" y2="227"/>
-      <line style="stroke:#B45309;stroke-width:2;" x1="662.606" x2="668.606" y1="245" y2="227"/>
-      <text fill="#334155" font-size="14" textLength="50.663" x="636.275" y="219">Dispose</text>
+    <g class="autofac-event autofac-event" data-source-line="11" id="af-event-c">
+      <ellipse cx="823.156" cy="340" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="89.6" x="778.356" y="364.889">Resolve IClock</text>
     </g>
-    <g class="autofac-event" data-source-line="13" id="af-event-later">
-      <ellipse cx="759.65" cy="459" fill="#047857" rx="6" ry="6" style="stroke:#047857;stroke-width:2;"/>
-      <text fill="#334155" font-size="14" textLength="45.15" x="737.075" y="442">resolve</text>
-      <g class="autofac-instance" data-source-line="13" id="af-instance-surviving-later">
-        <text fill="#334155" font-size="14" textLength="50.575" x="734.362" y="487">IService</text>
-        <text fill="#64748B" font-size="12" textLength="73.425" x="722.937" y="505">surviving · new</text>
-      </g>
+    <g class="autofac-event autofac-event" data-source-line="14" id="af-event-b">
+      <ellipse cx="697.919" cy="612" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="101.238" x="647.3" y="636.889">Resolve IService</text>
     </g>
-    <g class="autofac-event" data-source-line="15" id="af-event-dispose-requestA-1">
-      <line style="stroke:#B45309;stroke-width:2;" x1="851.694" x2="857.694" y1="468" y2="450"/>
-      <line style="stroke:#B45309;stroke-width:2;" x1="858.694" x2="864.694" y1="468" y2="450"/>
-      <text fill="#334155" font-size="14" textLength="50.663" x="832.362" y="442">Dispose</text>
+    <g class="autofac-event autofac-event" data-source-line="17" id="af-event-.af-10">
+      <ellipse cx="957.244" cy="170" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="94.938" x="909.775" y="194.889">Dispose system</text>
     </g>
-    <g class="autofac-event" data-source-line="16" id="af-event-dispose-requestB-1">
-      <line style="stroke:#B45309;stroke-width:2;" x1="938.356" x2="944.356" y1="830" y2="812"/>
-      <line style="stroke:#B45309;stroke-width:2;" x1="945.356" x2="951.356" y1="830" y2="812"/>
-      <text fill="#334155" font-size="14" textLength="50.663" x="919.025" y="804">Dispose</text>
+    <g class="autofac-event autofac-destroy" data-source-line="18" id="af-event-.af-11">
+      <line style="stroke:#B45309;stroke-width:2;" x1="1034.712" x2="1040.712" y1="179" y2="161"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="1041.712" x2="1047.712" y1="179" y2="161"/>
     </g>
-    <g class="autofac-diagnostic" data-source-line="13" id="af-diagnostic-later">
-      <line style="stroke:#CBD5E1;stroke-width:1;stroke-dasharray:1,4;" x1="759.65" x2="759.65" y1="898" y2="910"/>
-      <line style="stroke:#CBD5E1;stroke-width:1;stroke-dasharray:1,4;" x1="759.65" x2="655.65" y1="910" y2="910"/>
-      <rect fill="#F8FAFC" height="137" rx="5" ry="5" style="stroke:#CBD5E1;stroke-width:1;" width="240" x="639.65" y="910"/>
-      <line style="stroke:#94A3B8;stroke-width:3;" x1="640.65" x2="640.65" y1="922" y2="1035"/>
-      <text fill="#334155" font-size="14" font-weight="700" textLength="82.425" x="655.65" y="936">later · IService</text>
-      <text fill="#64748B" font-size="12" textLength="45.375" x="655.65" y="957">Success</text>
-      <text fill="#64748B" font-size="12" textLength="86.625" x="655.65" y="972">Owner: requestA</text>
-      <text fill="#64748B" font-size="12" textLength="96" x="655.65" y="987">Instance: surviving</text>
-      <text fill="#64748B" font-size="12" textLength="53.325" x="655.65" y="1002">State: new</text>
-      <text fill="#64748B" font-size="12" textLength="110.1" x="655.65" y="1017">Confidence: declared</text>
-      <text fill="#64748B" font-size="12" textLength="115.95" x="655.65" y="1032">Other facts unspecified</text>
+    <g class="autofac-event autofac-event" data-source-line="20" id="af-event-later">
+      <ellipse cx="1174.831" cy="340" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="220.238" x="1064.712" y="364.889">Resolve IService after parent disposal</text>
     </g>
-    <g class="autofac-legend" id="af-legend">
-      <text fill="#64748B" font-size="12" textLength="407.1" x="26" y="1083">□ registration   ○ unspecified   ● success   ↶ reused   × failure   // disposal   ↩ authored cycle</text>
-      <text fill="#64748B" font-size="12" textLength="112.8" x="26" y="1098">Dotted: binding lookup</text>
-      <text fill="#64748B" font-size="12" textLength="107.4" x="884.287" y="1119">Logical event order →</text>
+    <g class="autofac-event autofac-create" data-source-line="21" id="af-event-.af-12">
+      <line style="stroke:#475569;stroke-width:1.5;" x1="1308.95" x2="1308.95" y1="443" y2="461"/>
+      <ellipse cx="1308.95" cy="452" fill="none" rx="3" ry="3" style="stroke:#475569;stroke-width:1.5;"/>
+    </g>
+    <g class="autofac-event autofac-event" data-source-line="24" id="af-event-.af-14">
+      <ellipse cx="1623.888" cy="340" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="106.663" x="1570.556" y="364.889">Dispose request A</text>
+    </g>
+    <g class="autofac-event autofac-destroy" data-source-line="25" id="af-event-.af-15">
+      <line style="stroke:#475569;stroke-width:1.5;" x1="1705.219" x2="1721.219" y1="444" y2="460"/>
+      <line style="stroke:#475569;stroke-width:1.5;" x1="1705.219" x2="1721.219" y1="460" y2="444"/>
+    </g>
+    <g class="autofac-event autofac-destroy" data-source-line="26" id="af-event-.af-16">
+      <line style="stroke:#B45309;stroke-width:2;" x1="1743.219" x2="1749.219" y1="349" y2="331"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="1750.219" x2="1756.219" y1="349" y2="331"/>
+    </g>
+    <g class="autofac-event autofac-event" data-source-line="27" id="af-event-.af-17">
+      <ellipse cx="1826.55" cy="612" fill="none" rx="6" ry="6" style="stroke:#0F766E;stroke-width:2;"/>
+      <text fill="#000" font-size="14" textLength="106.663" x="1773.219" y="636.889">Dispose request B</text>
+    </g>
+    <g class="autofac-event autofac-destroy" data-source-line="28" id="af-event-.af-18">
+      <line style="stroke:#B45309;stroke-width:2;" x1="1909.881" x2="1915.881" y1="621" y2="603"/>
+      <line style="stroke:#B45309;stroke-width:2;" x1="1916.881" x2="1922.881" y1="621" y2="603"/>
+    </g>
+    <g class="autofac-order" id="af-order">
+      <text fill="#64748B" font-size="14" textLength="125.3" x="1878.581" y="748.889">Logical event order →</text>
     </g>
   </g>
 </svg>

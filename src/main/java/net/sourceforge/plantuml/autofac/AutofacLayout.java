@@ -1,419 +1,348 @@
 package net.sourceforge.plantuml.autofac;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.PriorityQueue;
+import java.util.TreeSet;
 
 import net.sourceforge.plantuml.autofac.AutofacModel.Node;
-import net.sourceforge.plantuml.autofac.AutofacModel.Outcome;
+import net.sourceforge.plantuml.klimt.color.HColor;
+import net.sourceforge.plantuml.klimt.creole.CreoleMode;
+import net.sourceforge.plantuml.klimt.creole.Display;
 import net.sourceforge.plantuml.klimt.font.FontConfiguration;
 import net.sourceforge.plantuml.klimt.font.StringBounder;
+import net.sourceforge.plantuml.klimt.geom.HorizontalAlignment;
 import net.sourceforge.plantuml.klimt.geom.XDimension2D;
+import net.sourceforge.plantuml.klimt.shape.TextBlock;
+import net.sourceforge.plantuml.skin.ArrowConfiguration;
+import net.sourceforge.plantuml.stereo.Stereotype;
 import net.sourceforge.plantuml.style.ISkinParam;
 import net.sourceforge.plantuml.style.SName;
 import net.sourceforge.plantuml.style.Style;
 import net.sourceforge.plantuml.style.StyleSignatureBasic;
 
-/** Measured logical order, not elapsed time or inferred container behavior. */
+/** Measured horizontal chronology. Geometry describes authored entities, not container execution. */
 public final class AutofacLayout {
 	public static final double PADDING = 16;
 	public static final double GAP = 24;
 	public static final double MARKER_RADIUS = 6;
-
 	public final Map<String, ScopeBox> scopes;
 	public final List<ScopeBox> scopeOrder;
+	public final Map<String, TrackBox> tracks;
 	public final Map<String, EventBox> events;
+	public final Map<String, Port> ports;
 	public final List<Connector> connectors;
-	public final List<Panel> panels;
-	public final List<UnorderedBand> unordered;
+	public final List<GroupBox> groups;
+	public final List<NoteBox> notes;
+	public final List<ActivationBox> activations;
+	public final List<ModuleBox> modules;
 	public final boolean lanes;
-	public final double width, height, legendX, legendY, orderX, orderY;
-	public final Label legend, orderLabel;
+	public final double width, height;
+	public final Label orderLabel;
+	public final double orderX, orderY;
 
-	private AutofacLayout(Builder b, boolean lanes, double width, double height, double footer,
-			Label legend, Label order) {
-		this.scopes = immutableMap(b.boxes);
-		final List<ScopeBox> ordered = new ArrayList<ScopeBox>(b.boxes.values());
-		Collections.sort(ordered, new Comparator<ScopeBox>() {
-			public int compare(ScopeBox a, ScopeBox c) {
-				return Integer.compare(a.depth, c.depth);
-			}
+	private AutofacLayout(Builder b) {
+		scopes = map(b.boxes);
+		final List<ScopeBox> orderedScopes = new ArrayList<ScopeBox>(b.boxes.values());
+		Collections.sort(orderedScopes, new Comparator<ScopeBox>() {
+			public int compare(ScopeBox a, ScopeBox c) { return Integer.compare(a.depth, c.depth); }
 		});
-		this.scopeOrder = immutable(ordered);
-		this.events = immutableMap(b.eventBoxes);
-		this.connectors = immutable(b.connectors);
-		this.panels = immutable(b.panels);
-		this.unordered = immutable(b.bands);
-		this.lanes = lanes;
-		this.width = width;
-		this.height = height;
-		this.legendX = PADDING;
-		this.legendY = footer;
-		this.orderX = Math.max(PADDING, width - order.width - PADDING);
-		this.orderY = footer + legend.height + 6;
-		this.legend = legend;
-		this.orderLabel = order;
+		scopeOrder = list(orderedScopes);
+		tracks = map(b.tracks);
+		events = map(b.events);
+		ports = map(b.ports);
+		connectors = list(b.connectors);
+		groups = list(b.groups);
+		notes = list(b.notes);
+		activations = list(b.activations);
+		modules = list(b.modules);
+		lanes = b.lanes;
+		width = b.width;
+		height = b.bottom + b.order.height + PADDING * 2;
+		orderLabel = b.order;
+		orderX = Math.max(PADDING, width - orderLabel.width - PADDING);
+		orderY = b.bottom + PADDING;
 	}
 
 	public static AutofacLayout compute(AutofacModel model, ISkinParam skin, StringBounder bounder) {
 		return new Builder(model, skin, bounder).compute();
 	}
 
-	static Style style(ISkinParam skin, SName role) {
+	static Style style(ISkinParam skin, SName role) { return style(skin, role, null); }
+
+	static Style style(ISkinParam skin, SName role, String stereotype) {
 		return StyleSignatureBasic.of(SName.root, SName.element, SName.autofacDiagram, role)
+				.withTOBECHANGED(Stereotype.build(stereotype(stereotype)))
 				.getMergedStyle(skin.getCurrentStyleBuilder());
 	}
 
-	private static <T> List<T> immutable(List<T> values) {
+	static String stereotype(String value) {
+		if (value == null) return null;
+		value = value.trim();
+		return value.startsWith("<<") && value.endsWith(">>") ? value : "<<" + value + ">>";
+	}
+
+	static SName entityRole(Node node) {
+		if ("object".equals(node.kind)) return SName.object;
+		final String type = node.get("type", "participant").toLowerCase(java.util.Locale.ROOT);
+		if ("actor".equals(type)) return SName.actor;
+		if ("boundary".equals(type)) return SName.boundary;
+		if ("control".equals(type)) return SName.control;
+		if ("entity".equals(type)) return SName.entity;
+		if ("database".equals(type)) return SName.database;
+		if ("collections".equals(type)) return SName.collections;
+		if ("queue".equals(type)) return SName.queue;
+		return SName.participant;
+	}
+
+	private static <T> List<T> list(List<T> values) {
 		return Collections.unmodifiableList(new ArrayList<T>(values));
 	}
 
-	private static <K, V> Map<K, V> immutableMap(Map<K, V> values) {
+	private static <K, V> Map<K, V> map(Map<K, V> values) {
 		return Collections.unmodifiableMap(new LinkedHashMap<K, V>(values));
 	}
 
 	public static final class Label {
-		public final List<String> lines;
-		public final FontConfiguration font;
-		public final double width, height, lineHeight;
+		public final String text;
+		public final TextBlock block;
+		public final double width, height;
 
-		private Label(String text, FontConfiguration font, StringBounder bounder, double wrap) {
-			this.font = font;
-			final List<String> result = new ArrayList<String>();
-			if (text.length() > 0)
-				for (String paragraph : text.replace('\t', ' ').split("\n", -1)) {
-					String remaining = paragraph;
-					while (remaining.length() > 0 && measure(remaining, font, bounder) > wrap) {
-						int low = 1, high = remaining.length();
-						while (low < high) {
-							final int middle = (low + high + 1) / 2;
-							if (measure(remaining.substring(0, middle), font, bounder) <= wrap)
-								low = middle;
-							else
-								high = middle - 1;
-						}
-						int end = low;
-						if (end < remaining.length() && Character.isHighSurrogate(remaining.charAt(end - 1))
-								&& Character.isLowSurrogate(remaining.charAt(end)))
-							end++;
-						int split = end;
-						for (int i = end - 1; i > end / 2; i--)
-							if (Character.isWhitespace(remaining.charAt(i)) || remaining.charAt(i) == ',' || remaining.charAt(i) == '>') {
-								split = i + 1;
-								break;
-							}
-						result.add(remaining.substring(0, split));
-						remaining = remaining.substring(split);
-					}
-					result.add(remaining);
-				}
-			this.lines = immutable(result);
-			double w = 0;
-			double h = bounder.calculateDimension(font.getFont(), "Ag").getHeight();
-			for (String line : result) {
-				final XDimension2D dim = bounder.calculateDimension(font.getFont(), line);
-				w = Math.max(w, dim.getWidth());
-				h = Math.max(h, dim.getHeight());
-			}
-			this.width = w;
-			this.lineHeight = h + 3;
-			this.height = result.size() * lineHeight;
-		}
-
-		private static double measure(String text, FontConfiguration font, StringBounder bounder) {
-			return bounder.calculateDimension(font.getFont(), text).getWidth();
+		private Label(String text, SName role, ISkinParam skin, StringBounder bounder, String textColor, String stereotype) {
+			this.text = text;
+			FontConfiguration font = style(skin, role, stereotype).getFontConfiguration(skin.getIHtmlColorSet());
+			final HColor color = textColor == null ? null : skin.getIHtmlColorSet().getColorOrNull(textColor);
+			if (color != null) font = font.changeColor(color);
+			block = Display.getWithNewlines(skin.getPragma(), text).create8(
+					font, HorizontalAlignment.LEFT, skin, CreoleMode.FULL,
+					net.sourceforge.plantuml.klimt.LineBreakStrategy.NONE);
+			final XDimension2D dim = text.length() == 0 ? new XDimension2D(0, 0) : block.calculateDimension(bounder);
+			width = dim.getWidth();
+			height = dim.getHeight();
 		}
 	}
 
-	/** Row text coordinates are relative to its scope; all other public geometry is absolute. */
+	public static final class Point {
+		public final double x, y;
+		public Point(double x, double y) { this.x = x; this.y = y; }
+	}
+
+	/** A real entity attachment point. Registration ports are on the edge of their actual row. */
+	public static final class Port {
+		public final String id, kind;
+		public final Node node;
+		public final double x, y;
+		private Port(Node node, double x, double y) {
+			this.id = node.id; this.kind = node.kind; this.node = node; this.x = x; this.y = y;
+		}
+	}
+
 	public static final class ConstructionRow {
 		public final Node node;
-		public final String uid;
 		public final Label label, metadata;
-		public final double labelX, y, metadataY;
-		public final boolean module;
-
-		private ConstructionRow(Node node, String uid, Label label, Label metadata, double y, boolean module) {
-			this.node = node;
-			this.uid = uid;
-			this.label = label;
-			this.metadata = metadata;
-			this.labelX = PADDING + 12;
-			this.y = y;
-			this.metadataY = y + label.height + (metadata.height > 0 ? 2 : 0);
-			this.module = module;
+		public final double x, y, width, height;
+		private ConstructionRow(Node node, Label label, Label metadata, double x, double y, double width) {
+			this.node = node; this.label = label; this.metadata = metadata;
+			this.x = x; this.y = y; this.width = width;
+			height = label.height + (metadata.height > 0 ? metadata.height + 4 : 0) + 12;
 		}
 	}
 
-	public static final class ScopeBox {
+	public static final class ModuleBox {
 		public final Node node;
-		public final Label header, subtitle, status, constructionTitle, constructionFooter, activeTitle;
+		public final Label header;
 		public final List<ConstructionRow> rows;
-		public final double x, y, width, height, constructionX, constructionY, constructionWidth, constructionHeight;
-		public final double headerX, headerY, subtitleX, subtitleY, statusX, statusY;
-		public final double constructionTitleX, constructionTitleY, constructionFooterX, constructionFooterY;
-		public final double activeTitleX, activeTitleY, activeStartX, trackY, trackEndX;
-		public final int depth;
-		public final boolean open, failed;
-
-		private ScopeBox(Draft d, double y, double height, double right) {
-			this.node = d.node;
-			this.header = d.header;
-			this.subtitle = d.subtitle;
-			this.status = d.status;
-			this.constructionTitle = d.constructionTitle;
-			this.constructionFooter = d.footer;
-			this.activeTitle = d.activeTitle;
-			this.rows = immutable(d.rows);
-			this.x = d.x;
-			this.y = y;
-			this.width = right - x;
-			this.height = height;
-			this.headerX = x + PADDING;
-			this.headerY = y + PADDING;
-			this.subtitleX = headerX;
-			this.subtitleY = headerY + header.height + 3;
-			this.statusX = right - PADDING - status.width;
-			this.statusY = headerY;
-			this.constructionX = x + PADDING;
-			this.constructionY = y + d.cardTop;
-			this.constructionWidth = d.constructionWidth;
-			this.constructionHeight = d.constructionHeight;
-			this.constructionTitleX = constructionX + 12;
-			this.constructionTitleY = constructionY + 10;
-			this.constructionFooterX = constructionX + 12;
-			this.constructionFooterY = constructionY + constructionHeight - d.footer.height - 10;
-			this.activeStartX = constructionX + constructionWidth;
-			this.activeTitleX = activeStartX + PADDING;
-			this.activeTitleY = constructionTitleY;
-			this.trackY = y + d.trackOffset;
-			this.trackEndX = d.end;
-			this.depth = d.depth;
-			this.open = d.open;
-			this.failed = d.failed;
+		public final double x, y, width, height, headerX, headerY;
+		private ModuleBox(Node node, Label header, List<ConstructionRow> rows, double x, double y, double width, double height) {
+			this.node = node; this.header = header; this.rows = list(rows);
+			this.x = x; this.y = y; this.width = width; this.height = height;
+			headerX = x + 12; headerY = y + 12;
 		}
-
 		public double right() { return x + width; }
 		public double bottom() { return y + height; }
 	}
 
+	public static final class ScopeBox {
+		public final Node node;
+		public final Label header, subtitle, constructionTitle;
+		public final List<ConstructionRow> rows;
+		public final double x, y, width, height, constructionX, constructionY, constructionWidth, constructionHeight;
+		public final double headerX, headerY, subtitleX, subtitleY, activeStartX, birthX, trackY, trackEndX;
+		public final int depth;
+		public final boolean open, created;
+		private ScopeBox(Draft d, double right, double height) {
+			node = d.node; header = d.header; subtitle = d.subtitle; constructionTitle = d.title;
+			x = d.x; y = d.y; width = right - x; this.height = height; depth = d.depth;
+			headerX = x + PADDING; headerY = y + PADDING;
+			subtitleX = headerX; subtitleY = headerY + header.height + 4;
+			constructionX = x + PADDING; constructionY = y + d.cardTop;
+			constructionWidth = d.cardWidth; constructionHeight = d.cardHeight;
+			activeStartX = d.start; birthX = d.start;
+			trackEndX = d.end; trackY = d.trackY;
+			open = d.destroy == null; created = d.create != null;
+			final List<ConstructionRow> rows = new ArrayList<ConstructionRow>();
+			double rowY = constructionY + 14 + constructionTitle.height + 12;
+			for (RowDraft row : d.rows) {
+				final ConstructionRow r = new ConstructionRow(row.node, row.label, row.meta,
+						constructionX + 24, rowY, constructionWidth - 36);
+				rows.add(r); rowY += r.height;
+			}
+			this.rows = list(rows);
+		}
+		public double right() { return x + width; }
+		public double bottom() { return y + height; }
+	}
+
+	public static final class TrackBox {
+		public final Node node;
+		public final Label label, ownership;
+		public final double x, y, endX, labelX, labelY, ownershipX, ownershipY, ownerBoundaryX;
+		public final boolean openStart, open;
+		private TrackBox(Node node, Label label, double x, double y, double end, boolean openStart, boolean open,
+				Label ownership, double ownerBoundaryX) {
+			this.node = node; this.label = label; this.x = x; this.y = y; endX = end;
+			labelX = x + 8; labelY = y - label.height - 12; this.openStart = openStart; this.open = open;
+			this.ownership = ownership; ownershipX = x + 8; ownershipY = y + 28; this.ownerBoundaryX = ownerBoundaryX;
+		}
+	}
+
 	public static final class EventBox {
 		public final Node node;
-		public final Outcome outcome;
-		public final Label label, action, detail;
-		public final double x, y, labelX, labelY, actionX, actionY, detailX, detailY;
-		public final double width, height, left, top, feedbackX, feedbackY, feedbackWidth, feedbackHeight;
-
-		private EventBox(EventDraft d, double x, double y) {
-			this.node = d.node;
-			this.outcome = d.outcome;
-			this.label = d.label;
-			this.action = d.action;
-			this.detail = d.detail;
-			this.x = x;
-			this.y = y;
-			this.labelX = x - label.width / 2;
-			this.labelY = y + 14;
-			this.actionX = x - action.width / 2;
-			this.actionY = y - 14 - action.height;
-			this.detailX = x - detail.width / 2;
-			this.detailY = labelY + label.height + (detail.height > 0 ? 3 : 0);
-			this.width = d.width;
-			this.height = d.above + d.below;
-			this.left = x - width / 2;
-			this.top = y - d.above;
-			this.feedbackWidth = d.feedback ? Math.min(88, Math.max(40, width - 12)) : 0;
-			this.feedbackHeight = d.feedback ? 18 : 0;
-			this.feedbackX = x - feedbackWidth / 2;
-			this.feedbackY = actionY - 26;
+		public final Label label;
+		public final double x, y, baseY, labelX, labelY, width, height;
+		private EventBox(Node node, Label label, double x, double y) { this(node, label, x, y, y); }
+		private EventBox(Node node, Label label, double x, double y, double baseY) {
+			this.node = node; this.label = label; this.x = x; this.y = y; this.baseY = baseY;
+			labelX = x - label.width / 2; labelY = y + 14;
+			width = Math.max(12, label.width); height = 14 + label.height;
 		}
-
-		public double right() { return left + width; }
-		public double bottom() { return top + height; }
 	}
 
+	/** Points are in source-to-target order, independent of vertical direction and arrowhead style. */
 	public static final class Connector {
-		public final String uid, kind;
-		public final Node source;
-		public final Label label;
-		public final double x1, y1, x2, y2, channelY, labelX, labelY;
-		public final boolean local;
-
-		private Connector(String uid, String kind, Node source, Label label, double x1, double y1,
-				double x2, double y2, double channelY, double labelX, double labelY, boolean local) {
-			this.uid = uid;
-			this.kind = kind;
-			this.source = source;
-			this.label = label;
-			this.x1 = x1;
-			this.y1 = y1;
-			this.x2 = x2;
-			this.y2 = y2;
-			this.channelY = channelY;
-			this.labelX = labelX;
-			this.labelY = labelY;
-			this.local = local;
-		}
-	}
-
-	public static final class Panel {
-		public final String target;
 		public final Node node;
-		public final Outcome outcome;
-		public final Label title, label;
-		public final List<Label> chain;
-		public final SName role;
-		public final double x, y, width, height, titleX, titleY, labelX, labelY, chainY, targetX, targetY;
-		public final boolean leader;
-
-		private Panel(Card card, double x, double y, double targetY, boolean leader) {
-			this.target = card.target;
-			this.node = card.node;
-			this.outcome = card.outcome;
-			this.title = card.title;
-			this.label = card.body;
-			this.chain = immutable(card.chain);
-			this.role = card.role;
-			this.x = x;
-			this.y = y;
-			this.width = card.width;
-			this.height = card.height;
-			this.titleX = x + PADDING;
-			this.titleY = y + 12;
-			this.labelX = titleX;
-			this.labelY = titleY + title.height + 6;
-			this.chainY = labelY + label.height + (chain.isEmpty() ? 0 : 10);
-			this.targetX = card.targetX;
-			this.targetY = targetY;
-			this.leader = leader;
-		}
-	}
-
-	public static final class UnorderedBand {
-		public final String id;
-		public final Node source;
+		public final String kind, from, to;
 		public final Label label;
-		public final double x, y, width, height;
-
-		private UnorderedBand(String id, Node source, Label label, double x, double y, double width, double height) {
-			this.id = id;
-			this.source = source;
-			this.label = label;
-			this.x = x;
-			this.y = y;
-			this.width = width;
-			this.height = height;
+		public final List<Point> points;
+		public final double x1, y1, x2, y2, labelX, labelY;
+		public final ArrowConfiguration arrow;
+		private Connector(Node node, String kind, String from, String to, Label label, List<Point> points,
+				double labelX, double labelY, ArrowConfiguration arrow) {
+			this.node = node; this.kind = kind; this.from = from; this.to = to; this.label = label;
+			this.points = list(points); this.labelX = labelX; this.labelY = labelY; this.arrow = arrow;
+			x1 = points.get(0).x; y1 = points.get(0).y;
+			x2 = points.get(points.size() - 1).x; y2 = points.get(points.size() - 1).y;
 		}
 	}
 
-	private static final class BandBounds {
-		double left, top, right, bottom;
-
-		BandBounds(double left, double top, double right, double bottom) {
-			this.left = left;
-			this.top = top;
-			this.right = right;
-			this.bottom = bottom;
+	public static final class GroupBox {
+		public final Node node;
+		public final String uid, logicalId;
+		public final Label label;
+		public final double x, y, width, height, continuationY;
+		public final boolean continuation;
+		public final List<Branch> branches;
+		private GroupBox(Node node, String uid, String logicalId, Label label, double x, double y, double width,
+				double height, List<Branch> branches, boolean continuation, double continuationY) {
+			this.node = node; this.uid = uid; this.logicalId = logicalId; this.label = label; this.x = x; this.y = y;
+			this.width = width; this.height = height; this.branches = list(branches);
+			this.continuation = continuation; this.continuationY = continuationY;
 		}
+	}
+
+	public static final class Branch {
+		public final Node node;
+		public final Label label;
+		public final double x;
+		private Branch(Node node, Label label, double x) { this.node = node; this.label = label; this.x = x; }
+	}
+
+	public static final class NoteBox {
+		public final Node node;
+		public final Label label;
+		public final double x, y, width, height, labelX, labelY;
+		private NoteBox(Node node, Label label, double x, double y, double span) {
+			this.node = node; this.label = label; this.x = x; this.y = y;
+			width = label.width + 24; height = Math.max(label.height + 20, span);
+			labelX = x + 12; labelY = y + (height - label.height) / 2;
+		}
+	}
+
+	public static final class ActivationBox {
+		public final Node node;
+		public final String target;
+		public final double x1, x2, y;
+		public final boolean open;
+		private ActivationBox(Node node, String target, double x1, double x2, double y, boolean open) {
+			this.node = node; this.target = target; this.x1 = x1; this.x2 = x2; this.y = y; this.open = open;
+		}
+	}
+
+	private static final class RowDraft {
+		final Node node;
+		final Label label, meta;
+		RowDraft(Node node, Label label, Label meta) { this.node = node; this.label = label; this.meta = meta; }
 	}
 
 	private static final class Draft {
 		final Node node;
-		final Label header, subtitle, constructionTitle, footer, activeTitle;
-		Label status;
-		final List<ConstructionRow> rows = new ArrayList<ConstructionRow>();
-		final List<Draft> children = new ArrayList<Draft>();
-		final List<EventDraft> events = new ArrayList<EventDraft>();
-		double constructionWidth, constructionHeight, cardTop, ownHeight, trackOffset;
-		double x, end, right, headerWidth, above, below, traceHeight, traceWidth;
-		double bandBottomPadding = PADDING;
-		int depth;
-		boolean open = true, failed, lookup;
-
-		Draft(Node node, Label header, Label subtitle, Label constructionTitle, Label footer, Label activeTitle) {
-			this.node = node;
-			this.header = header;
-			this.subtitle = subtitle;
-			this.constructionTitle = constructionTitle;
-			this.footer = footer;
-			this.activeTitle = activeTitle;
+		final Label header, subtitle, title;
+		final List<RowDraft> rows = new ArrayList<RowDraft>();
+		final int depth;
+		double x, y, cardTop, cardWidth, cardHeight, ownHeight, subtreeHeight, trackY, start, end;
+		Node create, destroy;
+		Draft(Node node, Label header, Label subtitle, Label title, int depth) {
+			this.node = node; this.header = header; this.subtitle = subtitle; this.title = title; this.depth = depth;
 		}
 	}
 
-	private static final class EventDraft {
-		final Node node;
-		final Outcome outcome;
-		final Label label, action, detail;
-		final double width, above, below;
-		final boolean feedback;
-		double stackOffset, gutter;
+	private static final class Obstacle {
+		final double x, y, right, bottom;
+		Obstacle(double x, double y, double width, double height) {
+			this.x = x; this.y = y; right = x + width; bottom = y + height;
+		}
+		boolean intersects(double left, double top, double width, double height) {
+			return left < right + 4 && left + width > x - 4 && top < bottom + 4 && top + height > y - 4;
+		}
+		boolean crosses(Point a, Point b) { return crosses(a.x, a.y, b.x, b.y); }
+		boolean crosses(double x1, double y1, double x2, double y2) {
+			if (x1 == x2) return x1 > x && x1 < right && Math.max(y1, y2) > y && Math.min(y1, y2) < bottom;
+			if (y1 == y2) return y1 > y && y1 < bottom && Math.max(x1, x2) > x && Math.min(x1, x2) < right;
+			return false;
+		}
+		boolean contains(Point p) { return p.x > x && p.x < right && p.y > y && p.y < bottom; }
+	}
 
-		EventDraft(Node node, Outcome outcome, Label label, Label action, Label detail) {
-			this.node = node;
-			this.outcome = outcome;
-			this.label = label;
-			this.action = action;
-			this.detail = detail;
-			this.feedback = outcome != null && ("reused".equals(outcome.get("state"))
-					|| outcome.paths.containsKey("cycle") || "recursion".equals(outcome.kind));
-			this.width = Math.max(40, Math.max(label.width, Math.max(action.width, detail.width))) + 12;
-			this.above = action.height + 14 + (feedback ? 30 : 0);
-			this.below = 14 + label.height + (detail.height > 0 ? 3 + detail.height : 0);
+	private static final class RouteStep implements Comparable<RouteStep> {
+		final int index;
+		final double cost, estimate;
+		RouteStep(int index, double cost, double estimate) {
+			this.index = index; this.cost = cost; this.estimate = estimate;
+		}
+		public int compareTo(RouteStep other) {
+			final int result = Double.compare(estimate, other.estimate);
+			return result == 0 ? Integer.compare(index, other.index) : result;
 		}
 	}
 
-	private static final class Card {
-		final String target;
-		final Node node;
-		final Outcome outcome;
-		final Label title, body;
-		final List<Label> chain;
-		final SName role;
-		final double width, height, targetX;
-
-		Card(String target, Node node, Outcome outcome, Label title, Label body, List<Label> chain,
-				SName role, double targetX) {
-			this.target = target;
-			this.node = node;
-			this.outcome = outcome;
-			this.title = title;
-			this.body = body;
-			this.chain = chain;
-			this.role = role;
-			this.targetX = targetX;
-			double w = Math.max(title.width, body.width) + 2 * PADDING;
-			double h = 24 + title.height + 6 + body.height;
-			for (int i = 0; i < chain.size(); i++) {
-				w = Math.max(w, chain.get(i).width + 2 * PADDING * (i + 2));
-				h += chain.get(i).height + 2 * PADDING;
-			}
-			if (chain.isEmpty() == false)
-				h += 10;
-			if (outcome != null && outcome.paths.containsKey("cycle"))
-				h += 44;
-			this.width = Math.max(240, w);
-			this.height = h;
-		}
-	}
-
-	private static final class TraceLane {
-		final Draft scope;
-		final Label label;
-		final double offset;
-
-		TraceLane(Draft scope, Label label) {
-			this.scope = scope;
-			this.label = label;
-			this.offset = scope.traceHeight;
-			scope.traceHeight += label.height + 10;
-			scope.traceWidth = Math.max(scope.traceWidth, label.width);
+	private static final class ChronologyGroup {
+		final Node start;
+		final double entry;
+		final boolean unordered;
+		final List<Node> branches = new ArrayList<Node>();
+		final List<int[]> ranges = new ArrayList<int[]>();
+		int begin;
+		double end;
+		double eventHalfWidth;
+		ChronologyGroup(Node start, double entry, int begin) {
+			this.start = start; this.entry = entry; this.begin = begin; end = entry;
+			unordered = "par".equals(start.get("mode")) || "alt".equals(start.get("mode"));
+			branches.add(start);
 		}
 	}
 
@@ -423,725 +352,1089 @@ public final class AutofacLayout {
 		final StringBounder bounder;
 		final Map<String, Draft> drafts = new LinkedHashMap<String, Draft>();
 		final Map<String, ScopeBox> boxes = new LinkedHashMap<String, ScopeBox>();
-		final Map<String, EventBox> eventBoxes = new LinkedHashMap<String, EventBox>();
-		final Map<String, EventDraft> eventDrafts = new LinkedHashMap<String, EventDraft>();
-		final Map<String, Double> xs = new LinkedHashMap<String, Double>();
-		final Map<String, Double> extents = new LinkedHashMap<String, Double>();
-		final Map<SName, FontConfiguration> fonts = new EnumMap<SName, FontConfiguration>(SName.class);
-		final Map<String, ConstructionRow> registrationRows = new LinkedHashMap<String, ConstructionRow>();
-		final Map<String, Draft> registrationScopes = new LinkedHashMap<String, Draft>();
-		final Map<String, TraceLane> traceLanes = new LinkedHashMap<String, TraceLane>();
+		final Map<String, TrackBox> tracks = new LinkedHashMap<String, TrackBox>();
+		final Map<String, EventBox> events = new LinkedHashMap<String, EventBox>();
+		final Map<String, Port> ports = new LinkedHashMap<String, Port>();
+		final Map<String, Double> columns = new LinkedHashMap<String, Double>();
+		final Map<String, Double> births = new LinkedHashMap<String, Double>();
+		final Map<String, Double> deaths = new LinkedHashMap<String, Double>();
+		final Map<String, Label> labels = new LinkedHashMap<String, Label>();
+		final Map<String, Label> entityLabels = new LinkedHashMap<String, Label>();
+		final Map<String, Double> entityY = new LinkedHashMap<String, Double>();
 		final List<Connector> connectors = new ArrayList<Connector>();
-		final List<Panel> panels = new ArrayList<Panel>();
-		final List<UnorderedBand> bands = new ArrayList<UnorderedBand>();
-		final List<Draft> roots = new ArrayList<Draft>();
-		final Map<String, List<Node>> parallelGroups = new LinkedHashMap<String, List<Node>>();
-		final Map<String, Integer> parallelDepths = new LinkedHashMap<String, Integer>();
-		final Map<String, Label> parallelLabels = new LinkedHashMap<String, Label>();
-		double horizon, scopeGap = GAP;
-		int maxDepth, parallelNesting;
+		final List<GroupBox> groups = new ArrayList<GroupBox>();
+		final List<NoteBox> notes = new ArrayList<NoteBox>();
+		final List<ActivationBox> activations = new ArrayList<ActivationBox>();
+		final List<ModuleBox> modules = new ArrayList<ModuleBox>();
+		final List<Obstacle> obstacles = new ArrayList<Obstacle>();
+		final List<Obstacle> noteObstacles = new ArrayList<Obstacle>();
+		final List<Obstacle> labelBoundaries = new ArrayList<Obstacle>();
+		final Map<String, Double> useEnds = new LinkedHashMap<String, Double>();
+		final Map<String, Double> extentEnds = new LinkedHashMap<String, Double>();
+		final Map<String, Double> relationColumns = new LinkedHashMap<String, Double>();
+		final Map<String, double[]> groupRanges = new LinkedHashMap<String, double[]>();
+		final Map<String, String> logicalGroups = new LinkedHashMap<String, String>();
+		final Map<String, Map<String, Double>> rowOffsets = new LinkedHashMap<String, Map<String, Double>>();
+		final Map<String, Double> maximumRowOffsets = new LinkedHashMap<String, Double>();
+		final Label order;
+		double horizon, width, bottom, top;
+		boolean lanes;
 
 		Builder(AutofacModel model, ISkinParam skin, StringBounder bounder) {
-			this.model = model;
-			this.skin = skin;
-			this.bounder = bounder;
+			this.model = model; this.skin = skin; this.bounder = bounder;
+			order = label("Logical event order →", SName.autofacMuted);
 		}
 
-		Label label(String text, SName role, double wrap) {
-			FontConfiguration font = fonts.get(role);
-			if (font == null) {
-				font = style(skin, role).getFontConfiguration(skin.getIHtmlColorSet());
-				if (role == SName.autofacMuted)
-					font = font.changeSize((float) Math.max(9, font.getSize2D() * 0.86));
-				fonts.put(role, font);
-			}
-			return new Label(text, font, bounder, wrap);
+		Label label(String text, SName role) { return new Label(text, role, skin, bounder, null, null); }
+		Label label(Node node, String text, SName role) {
+			return new Label(text, role, skin, bounder, node.get("textColor"), node.get("stereotype"));
 		}
+		Label entityLabel(Node node) {
+			Label label = entityLabels.get(node.id);
+			if (label == null) {
+				label = label(node, node.get("label", node.id), entityRole(node));
+				entityLabels.put(node.id, label);
+			}
+			return label;
+		}
+		double column(Node node) { return columns.get(node.id); }
 
 		AutofacLayout compute() {
-			parallelNesting = parallelDepth(model.statements);
-			if (parallelNesting > 0)
-				scopeGap = GAP + parallelNesting * 16;
-			for (Node scope : model.scopes.values()) {
-				final String id = scope.id.toUpperCase(Locale.ROOT);
-				String subtitle = scope.get("parent") == null ? "" : "child of " + scope.get("parent");
-				if (scope.get("tag") != null)
-					subtitle += (subtitle.length() == 0 ? "" : " · ") + "tag \"" + scope.get("tag") + "\"";
-				if (scope.get("ownedBy") != null)
-					subtitle += " · owned by " + scope.get("ownedBy");
-				final Draft d = new Draft(scope, label(id + " LIFETIME", SName.autofacHeading, 420),
-						label(subtitle, SName.autofacMuted, 420), label("Construction", SName.autofacHeading, 300),
-						label("sealed before active events", SName.autofacMuted, 300),
-						label("ACTIVE " + id, SName.autofacHeading, 420));
-				d.failed = isFailure(model.outcomes.get(scope.id));
-				drafts.put(scope.id, d);
-				construction(d);
-			}
-			for (Draft d : drafts.values()) {
-				final Draft parent = drafts.get(d.node.get("parent"));
-				if (parent == null)
-					roots.add(d);
-				else
-					parent.children.add(d);
-			}
-			for (Draft root : roots)
-				depth(root, 0);
-			measureEvents();
-			placeChronology();
-			boolean lanes = false;
-			for (Draft d : drafts.values()) {
-				if (d.open)
-					d.end = horizon + 48 + (maxDepth - d.depth) * PADDING;
-				final Draft parent = drafts.get(d.node.get("parent"));
-				if (parent != null && (d.x < parent.x || (parent.open == false && (d.open || d.end > parent.end))))
-					lanes = true;
-				for (EventDraft e : d.events)
-					if (xs.get(e.node.id) < d.x || (d.open == false && xs.get(e.node.id) > d.end))
-						lanes = true;
-				d.status = label(d.failed ? "creation failed" : d.open ? "remains active" : "disposed", SName.autofacMuted, 240);
-				d.headerWidth = d.header.width + d.status.width + 3 * PADDING;
-				d.right = Math.max(d.end + PADDING, Math.max(d.x + d.headerWidth, d.x + d.subtitle.width + 2 * PADDING));
-				for (EventDraft e : d.events)
-					if (xs.get(e.node.id) >= d.x && (d.open || xs.get(e.node.id) <= d.end))
-						d.right = Math.max(d.right, xs.get(e.node.id) + e.width / 2 + PADDING);
-				d.right = Math.max(d.right, d.x + PADDING + d.constructionWidth
-						+ (d.failed ? PADDING : Math.max(d.activeTitle.width, d.traceWidth) + 2 * PADDING));
-			}
-			double bottom = PADDING;
-			for (Draft root : roots)
-				bottom = (lanes ? placeLanes(root, bottom) : placeNested(root, bottom)) + GAP;
-			placeEvents();
-			placeConnectors();
-			placeBands();
-			double width = PADDING;
-			for (ScopeBox box : boxes.values())
+			measure();
+			chronology();
+			planRelations();
+			intervals();
+			double moduleY = top;
+			for (Node module : model.modules.values()) {
+				final ModuleBox box = moduleBox(module, moduleY);
+				modules.add(box);
 				width = Math.max(width, box.right() + PADDING);
-			for (EventBox event : eventBoxes.values()) {
-				width = Math.max(width, event.right() + PADDING);
-				bottom = Math.max(bottom, event.bottom() + GAP);
+				ports.put(module.id, new Port(module, box.right(), box.y + box.height / 2));
+				entityY.put(module.id, box.y + box.height / 2);
+				moduleY = box.bottom() + GAP;
 			}
-			for (Connector c : connectors)
-				width = Math.max(width, c.labelX + c.label.width + PADDING);
-			for (UnorderedBand band : bands) {
-				width = Math.max(width, band.x + band.width + PADDING);
-				bottom = Math.max(bottom, band.y + band.height + GAP);
-			}
-			final Label legend = label("□ registration   ○ unspecified   ● success   ↶ reused   × failure   // disposal   ↩ authored cycle\nDotted: binding lookup", SName.autofacMuted, 1000);
-			final Label order = label("Logical event order →", SName.autofacMuted, 600);
-			width = Math.max(width, legend.width + 2 * PADDING);
-			final List<Card> cards = cards();
-			for (Card card : cards)
-				width = Math.max(width, card.width + 2 * PADDING);
-			bottom = placePanels(cards, bottom, width);
-			return new AutofacLayout(this, lanes, width, bottom + legend.height + order.height + 22, bottom, legend, order);
-		}
-
-		void depth(Draft d, int value) {
-			d.depth = value;
-			maxDepth = Math.max(maxDepth, value);
-			for (Draft child : d.children)
-				depth(child, value + 1);
-		}
-
-		void construction(Draft d) {
-			d.cardTop = PADDING + d.header.height + (d.subtitle.height == 0 ? 12 : 3 + d.subtitle.height + 12);
-			d.constructionWidth = Math.max(d.constructionTitle.width, d.footer.width) + 24;
-			double y = d.cardTop + 10 + d.constructionTitle.height + 12;
-			for (Node node : d.node.children)
-				if ("install".equals(node.kind)) {
-					final String alias = node.get("sourceEvent", node.get("target", node.id));
-					y = addRow(d, node, "install " + alias, "", "af-install-" + d.node.id + "-" + alias, y, true);
-					final Node module = model.modules.get(node.get("resolvedModule"));
-					if (module != null)
-						for (Node contribution : module.children)
-							y = constructionRow(d, contribution, d.node.id + "." + alias + ".", y);
-				} else
-					y = constructionRow(d, node, d.node.id + ".", y);
-			if (d.rows.isEmpty())
-				y = addRow(d, d.node, "No registrations", "", "af-empty-" + d.node.id, y, false);
-			d.constructionHeight = y - d.cardTop + 6 + d.footer.height + 10;
-		}
-
-		double constructionRow(Draft d, Node n, String prefix, double y) {
-			if ("register".equals(n.kind)) {
-				String text = service(n);
-				if ("delegate".equals(n.get("activator")))
-					text += " → delegate " + n.get("target", "{ declared calls }");
-				else if ("instance".equals(n.get("activator")))
-					text += " → instance " + n.get("target", "unspecified");
-				else
-					text += " → " + n.get("type", "unspecified");
-				String metadata = n.get("sharing", "");
-				if (n.get("ownership") != null)
-					metadata += (metadata.length() == 0 ? "" : " · ") + "owner " + n.get("ownership");
-				return addRow(d, n, text, metadata, "af-reg-" + prefix + n.id, y, false);
-			}
-			if ("decorate".equals(n.kind))
-				return addRow(d, n, "Decorator: " + n.get("type", "unspecified"), service(n), "af-decorator-" + prefix + d.rows.size(), y, false);
-			if ("depends".equals(n.kind)) {
-				final StringBuilder text = new StringBuilder("Dependencies: " + n.get("type", "unspecified"));
-				for (Node dependency : n.children)
-					text.append('\n').append(dependency.id).append(": ").append(service(dependency)).append(" · ").append(dependency.get("mode", "unspecified"));
-				return addRow(d, n, text.toString(), "", "af-dependency-" + prefix + d.rows.size(), y, false);
-			}
-			return y;
-		}
-
-		double addRow(Draft d, Node node, String text, String metadata, String uid, double y, boolean module) {
-			final Label main = label(text, module ? SName.autofacModule : SName.autofacConstruction, 300);
-			final Label meta = label(metadata, SName.autofacMuted, 300);
-			final ConstructionRow row = new ConstructionRow(node, uid, main, meta, y, module);
-			d.rows.add(row);
-			d.constructionWidth = Math.max(d.constructionWidth, Math.max(main.width, meta.width) + 40);
-			if ("register".equals(node.kind)) {
-				registrationRows.put(uid, row);
-				registrationScopes.put(uid, d);
-			}
-			return row.metadataY + meta.height + 7;
-		}
-
-		void measureEvents() {
-			for (Node n : model.timeline) {
-				if ("birth".equals(n.kind))
-					continue;
-				final Outcome o = model.outcomes.get(n.id);
-				final SName role = eventRole(n, o);
-				final String action = "dispose".equals(n.kind) ? "Dispose" : isFailure(o) ? "failed" : "call".equals(n.kind) ? "call" : n.kind;
-				final String service = "dispose".equals(n.kind) ? "" : "invoke".equals(n.kind) ? n.get("target", "") + "()"
-						: "evaluate".equals(n.kind) ? n.get("target", "") + ".Value" : service(n);
-				final EventDraft e = new EventDraft(n, o, label(service, SName.autofacLifetime, 150),
-						label(action, role, 150), label(eventDetail(n, o), SName.autofacMuted, 160));
-				eventDrafts.put(n.id, e);
-				final Draft d = drafts.get(n.get("scope"));
-				if (d != null) {
-					d.events.add(e);
-					d.above = Math.max(d.above, e.above);
-					d.below = Math.max(d.below, e.below);
-				}
-			}
-			// Reserve only local, measured strips; view projections must not move chronology.
-			for (EventDraft event : eventDrafts.values()) {
-				if (event.outcome != null && event.outcome.get("selected") != null) {
-					final Draft selected = registrationScopes.get("af-reg-" + event.outcome.get("selected"));
-					if (selected != null && selected.lookup == false) {
-						selected.lookup = true;
-						selected.traceHeight += 12;
-					}
-				}
-			}
-			for (EventDraft event : eventDrafts.values()) {
-				final EventDraft during = eventDrafts.get(event.node.get("during"));
-				if (during != null)
-					traceLanes.put("af-call-" + event.node.id, new TraceLane(drafts.get(during.node.get("scope")),
-							label("explicit call", SName.autofacModule, 250)));
-			}
+			top = moduleY;
+			double y = top;
 			for (Draft d : drafts.values())
-				for (ConstructionRow row : d.rows)
-					if ("register".equals(row.node.kind))
-						for (int i = 0; i < row.node.children.size(); i++)
-							traceLanes.put(row.uid + "-call-" + i, new TraceLane(d,
-									label("declared call: " + service(row.node.children.get(i)), SName.autofacModule, 250)));
-		}
-
-		void placeChronology() {
-			// A column is a causal rank, not a source-order edge. Incomparables share its center.
-			final Map<String, Integer> ranks = new LinkedHashMap<String, Integer>();
-			final List<Double> leftSpans = new ArrayList<Double>();
-			final List<Double> rightSpans = new ArrayList<Double>();
-			double parallelWidth = 0;
-			for (Draft d : drafts.values())
-				parallelWidth = Math.max(parallelWidth, Math.max(Math.max(d.header.width, d.subtitle.width),
-						Math.max(d.activeTitle.width, d.constructionTitle.width)));
-			parallelWidth += 2 * PADDING + parallelNesting * 8;
-			for (Node n : model.timeline) {
-				int rank = 0;
-				final Set<String> predecessors = model.predecessors.get(n.id);
-				if (predecessors != null)
-					for (String predecessor : predecessors) {
-						final Integer before = ranks.get(predecessor);
-						if (before != null)
-							rank = Math.max(rank, before + 1);
-					}
-				ranks.put(n.id, rank);
-				while (leftSpans.size() <= rank) {
-					leftSpans.add(0.0);
-					rightSpans.add(0.0);
-				}
-				final Draft d = drafts.get(n.get("scope"));
-				final EventDraft e = eventDrafts.get(n.id);
-				final double eventWidth = e == null ? 0 : n.get("parallel") == null ? e.width : Math.max(e.width, parallelWidth);
-				final double left = e == null ? 0 : eventWidth / 2;
-				double right = e == null ? PADDING + d.constructionWidth : eventWidth / 2;
-				final Draft owned = drafts.get(n.get("ownedScope"));
-				if (owned != null)
-					right = Math.max(right, PADDING + owned.constructionWidth);
-				leftSpans.set(rank, Math.max(leftSpans.get(rank), left));
-				rightSpans.set(rank, Math.max(rightSpans.get(rank), right));
-			}
-			final double[] centers = new double[leftSpans.size()];
-			final double[] ends = new double[leftSpans.size()];
-			double cursor = PADDING;
-			for (int i = 0; i < centers.length; i++) {
-				centers[i] = cursor + leftSpans.get(i);
-				ends[i] = centers[i] + rightSpans.get(i);
-				cursor = ends[i] + GAP;
-			}
-			for (Node n : model.timeline) {
-				final int rank = ranks.get(n.id);
-				final Draft d = drafts.get(n.get("scope"));
-				final EventDraft e = eventDrafts.get(n.id);
-				final double x = centers[rank];
-				xs.put(n.id, x);
-				extents.put(n.id, ends[rank]);
-				horizon = Math.max(horizon, ends[rank]);
-				final Draft owned = drafts.get(n.get("ownedScope"));
-				if (owned != null) {
-					owned.x = x;
-					xs.put("birth-" + owned.node.id, x);
-					extents.put("birth-" + owned.node.id, x + PADDING + owned.constructionWidth);
-					if (owned.failed) {
-						owned.open = false;
-						owned.end = x + PADDING + owned.constructionWidth;
-					}
-				}
-				if (e == null) {
-					d.x = x;
-					if (d.failed) {
-						d.open = false;
-						d.end = x + PADDING + d.constructionWidth;
-					}
-				} else if ("dispose".equals(n.kind) && isFailure(e.outcome) == false) {
-					d.open = false;
-					d.end = x;
-				}
-			}
-			measureBands();
+				if (d.node.get("parent") == null) y = placeScope(d, y) + GAP;
+			for (Node node : model.objects.values())
+				if (drafts.containsKey(node.get("owner")) == false) y = placeTrack(node, y) + GAP;
+			for (Node node : model.participants.values())
+				if (drafts.containsKey(node.get("owner")) == false) y = placeTrack(node, y) + GAP;
+			bottom = Math.max(top + 80, y);
 			for (Draft d : drafts.values()) {
-				final Map<Double, Double> slots = new LinkedHashMap<Double, Double>();
-				final double step = d.above + d.below + GAP;
-				double lastOffset = 0;
-				for (EventDraft e : d.events) {
-					final Double x = xs.get(e.node.id);
-					final Double previous = slots.get(x);
-					e.stackOffset = previous == null ? 0 : previous + step + e.gutter;
-					slots.put(x, e.stackOffset);
-					lastOffset = Math.max(lastOffset, e.stackOffset);
-				}
-				d.trackOffset = d.cardTop + 10 + d.activeTitle.height + 12 + d.traceHeight + d.above
-						+ (parallelNesting == 0 ? 0 : parallelNesting * 20);
-				d.ownHeight = Math.max(d.cardTop + d.constructionHeight,
-						d.trackOffset + d.below + lastOffset) + d.bandBottomPadding;
+				final double h = lanes ? d.ownHeight : d.subtreeHeight;
+				final ScopeBox box = new ScopeBox(d, Math.max(d.x + d.cardWidth + PADDING * 2, d.end + PADDING), h);
+				boxes.put(d.node.id, box);
+				ports.put(d.node.id, new Port(d.node, d.start, d.trackY));
+				for (ConstructionRow row : box.rows)
+					ports.put(row.node.id, new Port(row.node, box.constructionX + box.constructionWidth, row.y + row.label.height / 2));
+				width = Math.max(width, box.right() + PADDING);
+			}
+			occurrences();
+			frames();
+			activities();
+			obstacles();
+			userNotes();
+			messages();
+			references();
+			width = Math.max(width, Math.max(horizon + PADDING * 2, order.width + PADDING * 2));
+			return new AutofacLayout(this);
+		}
+
+		int depth(Node node) {
+			final Node parent = model.scopes.get(node.get("parent"));
+			return parent == null ? 0 : depth(parent) + 1;
+		}
+
+		void measure() {
+			top = PADDING;
+			for (Node relation : model.relations)
+				if (endpointEntity(relation.get("from")).equals(endpointEntity(relation.get("to"))))
+					top += label(relation, relation.get("label", ""), SName.reference).height * 2 + 24;
+			for (Node node : model.timeline) {
+				String text = node.get("label", "");
+				if ("groupStart".equals(node.kind)) text = node.get("mode", "group") + (text.length() > 0 ? "  " + text : "");
+				if (("event".equals(node.kind) || "message".equals(node.kind) || "note".equals(node.kind))
+						&& node.get("stereotype") != null)
+					text = stereotype(node.get("stereotype")) + "\n" + text;
+				final SName role = "message".equals(node.kind) ? SName.arrow : "note".equals(node.kind)
+						? SName.note : node.kind.startsWith("group") ? SName.group : SName.circle;
+				labels.put(node.id, label(node, text, role));
+			}
+			for (Node node : model.scopes.values()) {
+				String subtitle = "";
+				if (node.get("parent") != null) subtitle = "child of " + display(node.get("parent"));
+				if (node.get("tag") != null) subtitle += (subtitle.length() > 0 ? " · " : "") + "tag \"" + node.get("tag") + "\"";
+				final Draft d = new Draft(node, label(node.get("label", node.id), SName.autofacHeading),
+						label(subtitle, SName.autofacMuted), label("Construction", SName.autofacHeading), depth(node));
+				d.cardWidth = Math.max(112, Math.max(Math.max(d.header.width, d.subtitle.width), d.title.width) + 32);
+				rows(d, node.children);
+				d.cardTop = PADDING + d.header.height + (d.subtitle.height > 0 ? d.subtitle.height + 4 : 0) + 12;
+				double contentHeight = 14 + d.title.height + 12;
+				for (RowDraft row : d.rows) contentHeight += row.label.height + (row.meta.height > 0 ? row.meta.height + 4 : 0) + 12;
+				d.cardHeight = Math.max(64, contentHeight + 12);
+				d.ownHeight = d.cardTop + d.cardHeight + PADDING;
+				drafts.put(node.id, d);
 			}
 		}
 
-		double placeNested(Draft d, double y) {
-			double bottom = y + d.ownHeight;
-			double right = d.right;
-			for (Draft child : d.children) {
-				bottom = placeNested(child, bottom + localGap(child));
-				right = Math.max(right, boxes.get(child.node.id).right() + PADDING);
-			}
-			if (d.children.isEmpty() == false)
-				bottom += PADDING;
-			boxes.put(d.node.id, new ScopeBox(d, y, bottom - y, right));
-			return bottom;
-		}
-
-		double localGap(Draft child) {
-			int provenance = child.node.get("ownedBy") == null ? 0 : 1;
-			for (ConstructionRow row : child.rows)
-				if (row.module)
-					provenance++;
-			return scopeGap + provenance * (label("module provenance", SName.autofacModule, 260).height + 8);
-		}
-
-		double placeLanes(Draft d, double y) {
-			boxes.put(d.node.id, new ScopeBox(d, y, d.ownHeight, d.right));
-			y += d.ownHeight;
-			for (Draft child : d.children)
-				y = placeLanes(child, y + localGap(child));
-			return y;
-		}
-
-		void placeEvents() {
-			for (EventDraft e : eventDrafts.values()) {
-				final ScopeBox scope = boxes.get(e.node.get("scope"));
-				if (scope != null)
-					eventBoxes.put(e.node.id, new EventBox(e, xs.get(e.node.id),
-							scope.trackY + e.stackOffset));
-			}
-		}
-
-		void connector(String uid, String kind, Node node, String text, double x1, double y1,
-				double x2, double y2, double channel, boolean local) {
-			final Label label = label(text, "lookup".equals(kind) ? SName.autofacMuted : SName.autofacModule, 250);
-			final double lx = Math.max(PADDING, (x1 + x2 - label.width) / 2);
-			connectors.add(new Connector(uid, kind, node, label, x1, y1, x2, y2, channel,
-					lx, channel - label.height - 3, local));
-		}
-		void traceConnector(String uid, Node source, double x1, double y1, double x2, double y2) {
-			final TraceLane lane = traceLanes.get(uid);
-			final ScopeBox scope = boxes.get(lane.scope.node.id);
-			final double labelY = scope.activeTitleY + scope.activeTitle.height + 4 + lane.offset;
-			connectors.add(new Connector(uid, "call", source, lane.label, x1, y1, x2, y2,
-					labelY + lane.label.height + 3, scope.activeStartX + 8, labelY, false));
-		}
-
-
-		void placeConnectors() {
-			for (Draft d : drafts.values()) {
-				final ScopeBox scope = boxes.get(d.node.id);
-				final ScopeBox parent = boxes.get(d.node.get("parent"));
-				final double gapTop = parent == null ? scope.y : parent.y + drafts.get(parent.node.id).ownHeight;
-				double channel = gapTop + GAP / 2 + label("module provenance", SName.autofacModule, 250).height;
-				final EventBox acquisition = eventBoxes.get(d.node.get("ownedBy"));
-				if (acquisition != null) {
-					connector("af-owned-" + d.node.id, "provenance", d.node, "Owned acquisition",
-							acquisition.x, acquisition.bottom() + 3, scope.constructionX + scope.constructionWidth / 2, scope.y,
-							channel, true);
-					channel += label("Owned acquisition", SName.autofacModule, 250).height + 8;
-				}
-				for (ConstructionRow row : scope.rows) {
-					if (row.module) {
-						final String alias = row.node.get("sourceEvent", row.node.get("target", row.node.id));
-						final EventBox source = eventBoxes.get(alias);
-						if (source != null) {
-							connector("af-provenance-" + scope.node.id + "-" + alias, "provenance", row.node, "module provenance",
-									source.x, source.bottom() + 3, scope.constructionX + scope.constructionWidth / 2, scope.y,
-									channel, true);
-							channel += label("module provenance", SName.autofacModule, 250).height + 8;
-						}
-					}
-					if ("register".equals(row.node.kind))
-						for (int i = 0; i < row.node.children.size(); i++) {
-							final Node call = row.node.children.get(i);
-							final ScopeBox target = boxes.get(call.get("scope"));
-							if (target != null)
-								traceConnector(row.uid + "-call-" + i, call,
-										scope.activeStartX, scope.y + row.y + row.label.height / 2,
-										target.activeStartX, target.trackY);
-						}
-				}
-			}
-			for (EventBox e : eventBoxes.values()) {
-				final EventBox during = eventBoxes.get(e.node.get("during"));
-				if (during != null)
-					traceConnector("af-call-" + e.node.id, e.node, during.x, during.y, e.x, e.y);
-				if (e.outcome == null || e.outcome.get("selected") == null
-						|| (model.expanded.contains(e.node.id) == false && "diagnostics".equals(model.view) == false))
-					continue;
-				final String uid = "af-reg-" + e.outcome.get("selected");
-				final ConstructionRow row = registrationRows.get(uid);
-				final Draft selected = registrationScopes.get(uid);
-				if (row != null) {
-					final ScopeBox scope = boxes.get(selected.node.id);
-					connector("af-lookup-" + e.node.id, "lookup", e.node, "", e.x, e.top,
-							scope.activeStartX, scope.y + row.y + row.label.height / 2,
-							scope.activeTitleY + scope.activeTitle.height + 6, false);
-				}
-			}
-		}
-
-		int parallelDepth(List<Node> nodes) {
-			int depth = 0;
-			for (Node node : nodes)
-				depth = Math.max(depth, ("parallel".equals(node.kind) ? 1 : 0) + parallelDepth(node.children));
-			return depth;
-		}
-
-		void collectParallel(List<Node> nodes, List<String> enclosing, Map<String, List<Node>> groups,
-				Map<String, Integer> depths) {
+		void rows(Draft d, List<Node> nodes) {
 			for (Node node : nodes) {
-				List<String> active = enclosing;
-				if ("parallel".equals(node.kind)) {
-					active = new ArrayList<String>(enclosing);
-					active.add(node.id);
-					groups.put(node.id, new ArrayList<Node>());
-					depths.put(node.id, enclosing.size());
-				}
-				for (Node runtime : model.timeline)
-					if (runtime.source == node.source && runtime.offset == node.offset)
-						for (String id : active)
-							if (groups.get(id).contains(runtime) == false)
-								groups.get(id).add(runtime);
-				collectParallel(node.children, active, groups, depths);
+				String text;
+				String meta = "";
+				if ("register".equals(node.kind)) {
+					final int dot = node.id.lastIndexOf('.');
+					text = node.id.substring(dot + 1) + ": " + ("delegate".equals(node.get("activator")) ? "ƒ " : "")
+							+ node.get("service", "");
+					if (node.get("key") != null) text += " [\"" + node.get("key") + "\"]";
+					else if (node.get("name") != null) text += " [\"" + node.get("name") + "\"]";
+					text += " → " + ("delegate".equals(node.get("activator")) ? node.get("label", "delegate")
+							: "instance".equals(node.get("activator")) ? "instance " + display(node.get("target")) : node.get("type", ""));
+					if (node.get("sharing") != null) meta = node.get("sharing");
+					if (node.get("ownership") != null) meta += (meta.length() > 0 ? " · " : "") + node.get("ownership");
+				} else if ("install".equals(node.kind)) {
+					text = "install " + node.get("target") + " (" + display(node.get("module")) + ")";
+				} else if ("decorate".equals(node.kind)) {
+					text = "decorate " + node.get("service", "") + " with " + node.get("type", "");
+				} else continue;
+				final RowDraft row = new RowDraft(node,
+						label(text, d.depth == 0 ? SName.autofacConstruction : SName.autofacChildConstruction),
+						label(meta, SName.autofacMuted));
+				d.rows.add(row);
+				d.cardWidth = Math.max(d.cardWidth, Math.max(row.label.width, row.meta.width) + 48);
+				if ("install".equals(node.kind)) rows(d, node.children);
 			}
 		}
 
-		void measureBands() {
-			collectParallel(model.statements, Collections.<String>emptyList(), parallelGroups, parallelDepths);
-			for (Node n : model.timeline) {
-				final String id = n.get("parallel");
-				if (id != null) {
-					if (parallelGroups.containsKey(id) == false)
-						parallelGroups.put(id, new ArrayList<Node>());
-					if (parallelGroups.get(id).contains(n) == false)
-						parallelGroups.get(id).add(n);
-				}
+		String display(String id) {
+			final Node node = model.entities.get(id);
+			return node == null ? id : node.get("label", id);
+		}
+
+		ModuleBox moduleBox(Node node, double y) {
+			final Label header = label(node.get("label", node.id), SName.autofacHeading);
+			final Draft d = new Draft(node, header, label("", SName.autofacMuted),
+					label("module", SName.autofacHeading), 0);
+			rows(d, node.children);
+			d.cardWidth = Math.max(112, Math.max(d.header.width, d.title.width) + 32);
+			for (RowDraft row : d.rows)
+				d.cardWidth = Math.max(d.cardWidth, Math.max(row.label.width, row.meta.width) + 48);
+			final List<ConstructionRow> measured = new ArrayList<ConstructionRow>();
+			double rowY = y + 12 + header.height + 12;
+			for (RowDraft row : d.rows) {
+				final ConstructionRow built = new ConstructionRow(row.node, row.label, row.meta,
+						PADDING + 24, rowY, d.cardWidth - 36);
+				measured.add(built);
+				rowY += built.height;
 			}
-			for (Map.Entry<String, List<Node>> entry : parallelGroups.entrySet()) {
-				final Set<Double> columns = new LinkedHashSet<Double>();
-				final Set<String> firstScopes = new LinkedHashSet<String>();
-				final int depth = parallelDepths.containsKey(entry.getKey()) ? parallelDepths.get(entry.getKey()) : 0;
-				final double inset = (parallelNesting - depth) * 10;
-				String owner = null;
-				boolean singleScope = true;
-				for (Node n : entry.getValue()) {
-					columns.add(xs.get(n.id));
-					if ("birth".equals(n.kind) || (owner != null && owner.equals(n.get("scope")) == false))
-						singleScope = false;
-					owner = n.get("scope");
-				}
-				final Label label = label(columns.size() > 1 ? "unordered except shown prerequisites" : "unordered",
-						SName.autofacModule, 300);
-				parallelLabels.put(entry.getKey(), label);
-				if (singleScope && owner != null) {
-					final Draft scope = drafts.get(owner);
-					scope.bandBottomPadding = Math.max(scope.bandBottomPadding, inset + 6);
-				}
-				if (depth > 0)
-					for (Node n : entry.getValue()) {
-						final EventDraft event = eventDrafts.get(n.id);
-						if (event != null && firstScopes.add(n.get("scope")))
-							event.gutter = Math.max(event.gutter, Math.max(0, label.height + inset + 10 - GAP));
+			final double height = Math.max(64, rowY - y + 12);
+			return new ModuleBox(node, header, measured, PADDING, y, d.cardWidth, height);
+		}
+
+		void chronology() {
+			double cursor = PADDING * 2;
+			Node previous = null;
+			final List<ChronologyGroup> frameStack = new ArrayList<ChronologyGroup>();
+			for (int timelineIndex = 0; timelineIndex < model.timeline.size(); timelineIndex++) {
+				final Node node = model.timeline.get(timelineIndex);
+				final Label text = labels.get(node.id);
+				double x = cursor;
+				if ("configure".equals(node.kind)) {
+					final Draft d = drafts.get(node.get("target"));
+					if (d != null) {
+						d.x = cursor + d.depth * PADDING;
+						cursor = d.x + d.cardWidth + PADDING * 2 + GAP;
+						x = d.x;
 					}
-			}
-		}
-
-		void placeBands() {
-			for (Map.Entry<String, List<Node>> entry : parallelGroups.entrySet()) {
-				double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, maxX = 0, maxY = 0;
-				for (Node n : entry.getValue()) {
-					final EventBox e = eventBoxes.get(n.id);
-					final ScopeBox s = boxes.get(n.get("scope"));
-					if (s == null)
-						continue;
-					minX = Math.min(minX, e == null ? s.x : e.left);
-					maxX = Math.max(maxX, e == null ? s.activeStartX : e.right());
-					minY = Math.min(minY, e == null ? s.y : e.top);
-					maxY = Math.max(maxY, e == null ? s.constructionY + s.constructionHeight : e.bottom());
-				}
-				if (minX == Double.MAX_VALUE)
-					continue;
-				final Label label = parallelLabels.get(entry.getKey());
-				final int level = parallelDepths.containsKey(entry.getKey()) ? parallelDepths.get(entry.getKey()) : 0;
-				final double inset = (parallelNesting - level) * 10;
-				final double left = Math.max(4, minX - inset);
-				final BandBounds bounds = new BandBounds(left, Math.max(2, minY - label.height - 6 - inset),
-						Math.max(maxX + inset, left + label.width + 16), maxY + inset);
-				boolean changed;
-				do {
-					final double oldLeft = bounds.left, oldTop = bounds.top, oldRight = bounds.right, oldBottom = bounds.bottom;
-					for (ScopeBox scope : boxes.values()) {
-						clearBandEdges(bounds, label, minY, level, scope.header, scope.headerX, scope.headerY);
-						clearBandEdges(bounds, label, minY, level, scope.subtitle, scope.subtitleX, scope.subtitleY);
-						clearBandEdges(bounds, label, minY, level, scope.activeTitle, scope.activeTitleX, scope.activeTitleY);
-						clearBandEdges(bounds, label, minY, level, scope.constructionTitle, scope.constructionTitleX, scope.constructionTitleY);
+				} else if ("create".equals(node.kind)) {
+					births.put(node.get("target"), x);
+					final Draft d = drafts.get(node.get("target"));
+					if (d != null) d.create = node;
+					final Node entity = model.entities.get(node.get("target"));
+					double reserved = d == null && entity != null ? entityLabel(entity).width : 0;
+					final Draft owner = entity == null ? null : drafts.get(entity.get("owner"));
+					if (d == null && owner != null && owner.x == 0)
+						reserved = Math.max(reserved, label("owned by " + display(owner.node.id), SName.autofacMuted).width);
+					cursor += reserved + GAP;
+				} else if ("destroy".equals(node.kind)) {
+					x += 12; deaths.put(node.get("target"), x); cursor = x + GAP;
+					final Draft d = drafts.get(node.get("target"));
+					if (d != null) d.destroy = node;
+				} else if ("activate".equals(node.kind) || "deactivate".equals(node.kind)) {
+					x = previous == null ? cursor : column(previous);
+				} else if ("message".equals(node.kind)) {
+					final Double anchor = columns.get(node.get("from"));
+					final Double receiverBirth = births.get(endpointEntity(node.get("to")));
+					if (previous != null && previous.id.equals(node.get("from")) && anchor != null
+							&& (receiverBirth == null || receiverBirth <= anchor)) x = anchor;
+					if ("true".equals(node.get("parallel")) && previous != null && "message".equals(previous.kind))
+						x = column(previous);
+					if (node.arrow != null && node.arrow.isSelfArrow() && node.arrow.isReverseDefine()
+							&& anchor == null) x += text.width + 24;
+					cursor = Math.max(cursor, x + text.width + GAP + 16);
+				} else if ("event".equals(node.kind)) {
+					double half = Math.max(MARKER_RADIUS, text.width / 2);
+					for (ChronologyGroup group : frameStack)
+						if (group.unordered) half = Math.max(half, group.eventHalfWidth);
+					x = cursor + half;
+					cursor = x + half + GAP;
+				} else if ("groupStart".equals(node.kind)) {
+					final ChronologyGroup group = new ChronologyGroup(node, cursor, timelineIndex + 1);
+					if (group.unordered) group.eventHalfWidth = unorderedEventHalfWidth(timelineIndex, node.id);
+					frameStack.add(group);
+					cursor += 12;
+				} else if ("groupElse".equals(node.kind) && frameStack.isEmpty() == false) {
+					final ChronologyGroup group = frameStack.get(frameStack.size() - 1);
+					group.end = Math.max(group.end, cursor);
+					group.ranges.add(new int[] { group.begin, timelineIndex });
+					group.begin = timelineIndex + 1;
+					group.branches.add(node);
+					if (group.unordered) {
+						x = group.entry;
+						cursor = group.entry + 12;
+					} else cursor += 12;
+				} else if ("groupEnd".equals(node.kind)) {
+					if (frameStack.isEmpty() == false) {
+						final ChronologyGroup group = frameStack.remove(frameStack.size() - 1);
+						group.ranges.add(new int[] { group.begin, timelineIndex });
+						x = Math.max(group.end, cursor);
+						for (Node branch : group.branches)
+							x = Math.max(x, group.entry + labels.get(branch.id).width + 32);
+						for (Node branch : group.branches) {
+							groupRanges.put(branch.id, new double[] { group.entry - 10, x + 10 });
+							logicalGroups.put(branch.id, group.start.id);
+						}
+						if (group.unordered) stackBranchRows(group);
 					}
-					changed = oldLeft != bounds.left || oldTop != bounds.top || oldRight != bounds.right || oldBottom != bounds.bottom;
-				} while (changed);
-				bands.add(new UnorderedBand(entry.getKey(), entry.getValue().get(0), label, bounds.left, bounds.top,
-						bounds.right - bounds.left, bounds.bottom - bounds.top));
+					cursor = x + 12;
+				} else if ("note".equals(node.kind)) {
+					final String targets = "," + node.get("targets", node.get("target", "")).replace(" ", "") + ",";
+					for (Node relation : model.relations)
+						if (model.objects.containsKey(relation.get("from")) && model.objects.containsKey(relation.get("to"))
+								&& targets.contains("," + relation.get("from") + ",") && targets.contains("," + relation.get("to") + ","))
+							x += label(relation, relation.get("label", ""), SName.reference).width + GAP;
+					cursor = x + text.width + GAP + 32;
+				} else cursor += GAP;
+				columns.put(node.id, x);
+				previous = node;
 			}
+			horizon = Math.max(cursor + 48, 320);
 		}
 
-		double clearBandHeader(double top, double left, double right, Label band, double eventTop,
-				int depth, Label header, double headerX, double headerY) {
-			if (header.width == 0 || header.height == 0 || right <= headerX || left >= headerX + header.width
-					|| top >= headerY + header.height + 6 || top + band.height + 2 <= headerY - 6)
-				return top;
-			// Use existing space before the first event; never stretch the scenario for a border.
-			final double below = headerY + header.height + 6 + depth * 4;
-			if (below + band.height + 8 <= eventTop)
-				return below;
-			return Math.max(2, Math.min(top, headerY - band.height - 8 - depth * 4));
-		}
-
-		void clearBandEdges(BandBounds bounds, Label band, double eventTop, int depth,
-				Label header, double x, double y) {
-			if (header.width == 0 || header.height == 0)
-				return;
-			final double margin = 6 + Math.max(0, parallelNesting - depth - 1) * 4;
-			final double right = x + header.width, bottom = y + header.height;
-			if (bounds.top < bottom + margin && bounds.bottom > y - margin) {
-				if (bounds.left > x - margin && bounds.left < right + margin)
-					bounds.left = Math.max(2, x - margin);
-				if (bounds.right > x - margin && bounds.right < right + margin)
-					bounds.right = right + margin;
+		double unorderedEventHalfWidth(int begin, String groupId) {
+			double half = MARKER_RADIUS;
+			for (int i = begin + 1; i < model.timeline.size(); i++) {
+				final Node node = model.timeline.get(i);
+				if ("groupEnd".equals(node.kind) && groupId.equals(node.get("group"))) break;
+				if ("event".equals(node.kind)) half = Math.max(half, labels.get(node.id).width / 2);
 			}
-			bounds.top = clearBandHeader(bounds.top, bounds.left, bounds.right, band, eventTop, depth, header, x, y);
-			if (bounds.left < right + margin && bounds.right > x - margin
-					&& bounds.bottom > y - margin && bounds.bottom < bottom + margin)
-				bounds.bottom = bottom + margin;
+			return half;
 		}
 
-		List<Card> cards() {
-			final List<Card> cards = new ArrayList<Card>();
-			final Set<String> targets = new LinkedHashSet<String>(model.expanded);
-			if ("diagnostics".equals(model.view))
-				for (Map.Entry<String, Outcome> e : model.outcomes.entrySet())
-					if (isFailure(e.getValue()) || "recursion".equals(e.getValue().kind) || e.getValue().category != null || e.getValue().paths.containsKey("cycle"))
-						targets.add(e.getKey());
-			for (String id : targets) {
-				final Node n = model.events.containsKey(id) ? model.events.get(id) : model.scopes.get(id);
-				final Outcome o = model.outcomes.get(id);
-				final StringBuilder body = new StringBuilder(o == null ? "Outcome unspecified" : humanize(o.kind)
-						+ (o.category == null ? "" : " · " + humanize(o.category)));
-				if (o != null) {
-					for (String key : new String[] { "selected", "activation", "sharing", "owner", "instance", "state" })
-						if (o.get(key) != null)
-							body.append('\n').append(factTitle(key)).append(": ").append(o.get(key));
-					final Node registration = model.registrations.get(o.get("selected"));
-					if (registration != null)
-						body.append("\nActivator: ").append(registration.get("activator", "unspecified")).append(' ')
-								.append(registration.get("type", registration.get("target", "")));
-					for (String key : new String[] { "cause", "risk", "exception", "message", "tag" })
-						if (o.get(key) != null)
-							body.append('\n').append(humanize(key)).append(": ").append(o.get(key));
-					if (o.get("empty") != null)
-						body.append("\nEmpty collection");
-					for (String key : new String[] { "path", "cycle" })
-						if (o.paths.containsKey(key))
-							body.append('\n').append(humanize(key)).append(": ").append(join(o.paths.get(key), " → "));
-					body.append("\nConfidence: ").append(o.get("confidence", "declared"));
+		List<String> occurrenceRails(Node node) {
+			final List<String> result = new ArrayList<String>();
+			if ("message".equals(node.kind)) {
+				addBranchRail(result, endpointEntity(node.get("from")));
+				addBranchRail(result, endpointEntity(node.get("to")));
+			} else if ("event".equals(node.kind)) addBranchRail(result, node.get("scope"));
+			else if ("create".equals(node.kind) || "destroy".equals(node.kind)
+					|| "activate".equals(node.kind) || "deactivate".equals(node.kind))
+				addBranchRail(result, node.get("target"));
+			return result;
+		}
+
+		void addBranchRail(List<String> rails, String id) {
+			if ((model.scopes.containsKey(id) || model.participants.containsKey(id)) && rails.contains(id) == false)
+				rails.add(id);
+		}
+
+		void stackBranchRows(ChronologyGroup group) {
+			if (group.ranges.size() < 2) return;
+			final Map<String, Integer> seen = new LinkedHashMap<String, Integer>();
+			double rowHeight = 144;
+			for (int[] range : group.ranges)
+				for (int i = range[0]; i < range[1]; i++) {
+					final Node node = model.timeline.get(i);
+					rowHeight = Math.max(rowHeight, labels.get(node.id).height * 2 + labels.get(group.start.id).height + 96);
+					if (node.arrow != null && node.arrow.isSelfArrow())
+						rowHeight = Math.max(rowHeight, labels.get(node.id).height * 2 + 64);
 				}
-				body.append("\nOther facts unspecified");
-				final List<Label> chain = new ArrayList<Label>();
-				if (o != null && o.paths.containsKey("chain"))
-					for (String object : o.paths.get("chain"))
-						chain.add(label(object, SName.autofacResolve, 280));
-				final SName role = isFailure(o) || (o != null && "recursion".equals(o.kind)) ? SName.autofacFailure : SName.autofacLifetime;
-				cards.add(card(id, n, o, id + (n == null ? "" : " · " + ("lifetime".equals(n.kind) ? n.id : service(n))),
-						body.toString(), chain, role));
+			for (int[] range : group.ranges) {
+				final List<String> rails = new ArrayList<String>();
+				for (int i = range[0]; i < range[1]; i++)
+					for (String rail : occurrenceRails(model.timeline.get(i)))
+						if (rails.contains(rail) == false) rails.add(rail);
+				for (String rail : rails) {
+					final int lane = seen.containsKey(rail) ? seen.get(rail) : 0;
+					seen.put(rail, lane + 1);
+					if (lane == 0) continue;
+					for (int i = range[0]; i < range[1]; i++) {
+						final Node node = model.timeline.get(i);
+						if (occurrenceRails(node).contains(rail) == false) continue;
+						Map<String, Double> offsets = rowOffsets.get(node.id);
+						if (offsets == null) {
+							offsets = new LinkedHashMap<String, Double>();
+							rowOffsets.put(node.id, offsets);
+						}
+						final double offset = (offsets.containsKey(rail) ? offsets.get(rail) : 0) + lane * rowHeight;
+						offsets.put(rail, offset);
+						maximumRowOffsets.put(rail, Math.max(maximumRowOffsets.containsKey(rail)
+								? maximumRowOffsets.get(rail) : 0, offset));
+					}
+				}
+			}
+		}
+
+		double rowOffset(Node node, String rail) {
+			final Map<String, Double> offsets = rowOffsets.get(node.id);
+			return offsets == null || offsets.containsKey(rail) == false ? 0 : offsets.get(rail);
+		}
+
+		double branchBelow(String rail) {
+			if (maximumRowOffsets.containsKey(rail) == false) return 0;
+			double labelHeight = 0;
+			for (Node node : model.timeline)
+				if (rowOffset(node, rail) > 0) labelHeight = Math.max(labelHeight, labels.get(node.id).height);
+			return maximumRowOffsets.get(rail) + labelHeight + 40;
+		}
+
+		void planRelations() {
+			final Map<String, Double> objectChannels = new LinkedHashMap<String, Double>();
+			int index = 0;
+			for (Node node : model.relations) {
+				final String from = node.get("from"), to = node.get("to");
+				final Label label = label(node, node.get("label", ""), SName.reference);
+				double x;
+				if (isRail(from) && isRail(to)) {
+					final Label first = railLabel(from), second = railLabel(to);
+					final String pair = from.compareTo(to) < 0 ? from + ":" + to : to + ":" + from;
+					x = Math.max(railStart(from) + 8 + first.width, railStart(to) + 8 + second.width) + GAP;
+					for (Node occurrence : model.timeline)
+						if ("message".equals(occurrence.kind)
+								&& (from.equals(endpointEntity(occurrence.get("from"))) && to.equals(endpointEntity(occurrence.get("to")))
+										|| to.equals(endpointEntity(occurrence.get("from"))) && from.equals(endpointEntity(occurrence.get("to")))))
+							x = Math.max(x, column(occurrence) + labels.get(occurrence.id).width / 2 + GAP);
+					if (objectChannels.containsKey(pair)) x = Math.max(x, objectChannels.get(pair));
+					objectChannels.put(pair, x + label.width + GAP);
+				} else {
+					final Double fromColumn = columns.get(from), toColumn = columns.get(to);
+					x = Math.max(fromColumn == null ? top : fromColumn, toColumn == null ? top : toColumn) + 16 + index * 12;
+				}
+				relationColumns.put(node.id, x);
+				index++;
+			}
+		}
+
+		boolean isRail(String id) {
+			return model.scopes.containsKey(id) || model.objects.containsKey(id) || model.participants.containsKey(id);
+		}
+
+		Label railLabel(String id) {
+			final Draft scope = drafts.get(id);
+			return scope != null ? scope.header : entityLabel(model.entities.get(id));
+		}
+
+		double railStart(String id) {
+			if (births.containsKey(id)) return births.get(id);
+			final Draft scope = drafts.get(id);
+			if (scope != null) return scope.x + PADDING + scope.cardWidth;
+			final Node entity = model.entities.get(id);
+			final String owner = entity == null ? null : entity.get("owner");
+			if (owner != null) {
+				if (births.containsKey(owner)) return births.get(owner);
+				final Draft ownerDraft = drafts.get(owner);
+				if (ownerDraft != null) return ownerDraft.x + PADDING + ownerDraft.cardWidth;
+			}
+			return PADDING * 2;
+		}
+
+		void intervals() {
+			useEnds.clear();
+			extentEnds.clear();
+			for (Node node : model.timeline) {
+				if ("event".equals(node.kind))
+					use(node.get("scope"), column(node) + 16, column(node) + labels.get(node.id).width + 8);
+				else if ("message".equals(node.kind)) {
+					use(endpointEntity(node.get("from")), column(node) + 16, column(node) + labels.get(node.id).width + 12);
+					use(endpointEntity(node.get("to")), column(node) + 16, column(node) + labels.get(node.id).width + 12);
+				} else if ("activate".equals(node.kind) || "deactivate".equals(node.kind))
+					use(node.get("target"), column(node), column(node));
+				else if ("note".equals(node.kind)) {
+					final String targets = node.get("targets", node.get("target", ""));
+					for (String target : targets.split(","))
+						use(endpointEntity(target.trim()), column(node) + 8, column(node) + labels.get(node.id).width + 12);
+				} else if ("create".equals(node.kind) || "destroy".equals(node.kind))
+					use(node.get("target"), column(node), column(node));
+			}
+			for (Node relation : model.relations) {
+				final Double x = relationColumns.get(relation.id);
+				if (x == null) continue;
+				final double extent = x + label(relation, relation.get("label", ""), SName.reference).width + 8;
+				useEndpoint(relation.get("from"), x + 8, extent);
+				useEndpoint(relation.get("to"), x + 8, extent);
+			}
+			for (Draft d : drafts.values()) {
+				d.start = births.containsKey(d.node.id) ? births.get(d.node.id) : d.x + PADDING + d.cardWidth;
+				final double cardRight = d.x + d.cardWidth + PADDING * 2;
+				if (d.create == null) d.end = cardRight;
+				else if (deaths.containsKey(d.node.id)) d.end = deaths.get(d.node.id);
+				else d.end = Math.max(cardRight, Math.max(d.start + 48,
+						extentEnds.containsKey(d.node.id) ? extentEnds.get(d.node.id) + 48 : 0));
+				final Draft parentDraft = drafts.get(d.node.get("parent"));
+				if (parentDraft != null && parentDraft.create == null && d.create != null) lanes = true;
+				final String parent = d.node.get("parent");
+				if (parent != null && deaths.containsKey(parent) && (d.end > deaths.get(parent))) lanes = true;
+			}
+			for (Node node : model.timeline) {
+				if ("event".equals(node.kind)) {
+					final Draft d = drafts.get(node.get("scope"));
+					if (d != null && (column(node) < d.x || d.create != null && column(node) > d.end)) lanes = true;
+				}
 			}
 			for (Node object : model.objects.values())
-				if ("instance".equals(object.kind) && object.attrs.containsKey("introducedBy") == false)
-					cards.add(card("instance-" + object.id, object, null, "Instance " + object.id,
-							object.get("type", "unspecified") + "\nOwner: " + object.get("owner", "unspecified"),
-							Collections.<Label>emptyList(), SName.autofacLifetime));
-			for (Node definition : model.statements)
-				if ("depends".equals(definition.kind)) {
-					final StringBuilder body = new StringBuilder();
-					for (Node dependency : definition.children)
-						body.append(body.length() == 0 ? "" : "\n").append(dependency.id).append(": ").append(service(dependency))
-								.append(" · ").append(dependency.get("mode", "unspecified"));
-					cards.add(card("dependencies-" + cards.size(), definition, null, "Dependencies · " + definition.get("type", "unspecified"),
-							body.toString(), Collections.<Label>emptyList(), SName.autofacConstruction));
-				}
-			Collections.sort(cards, new Comparator<Card>() {
-				public int compare(Card a, Card b) { return Double.compare(a.targetX, b.targetX); }
-			});
-			return cards;
+				if (deaths.containsKey(object.get("owner")) && (deaths.containsKey(object.id) == false
+						|| deaths.get(object.id) > deaths.get(object.get("owner")))) lanes = true;
 		}
 
-		Card card(String id, Node node, Outcome outcome, String title, String body, List<Label> chain, SName role) {
-			final EventBox event = node == null ? null : eventBoxes.get(node.id);
-			final ScopeBox scope = node == null ? null : boxes.get(node.id);
-			final double target = event != null ? event.x : scope != null ? scope.activeStartX : PADDING;
-			return new Card(id, node, outcome, label(title, SName.autofacHeading, 350),
-					label(body, SName.autofacMuted, 350), chain, role, target);
+		void useEndpoint(String id, double x, double extent) {
+			use(endpointEntity(id), x, extent);
 		}
 
-		double placePanels(List<Card> cards, double top, double width) {
-			double y = top, x = PADDING, rowHeight = 0;
-			for (Card card : cards) {
-				if (x > PADDING && x + card.width + PADDING > width) {
-					y += rowHeight + GAP;
-					x = PADDING;
-					rowHeight = 0;
+		void use(String id, double x, double extent) {
+			if (id == null) return;
+			final Double previous = useEnds.get(id), previousExtent = extentEnds.get(id);
+			if (previous == null || x > previous) useEnds.put(id, x);
+			if (previousExtent == null || extent > previousExtent) extentEnds.put(id, extent);
+			final Node entity = model.entities.get(id);
+			if (entity != null && entity.get("owner") != null) use(entity.get("owner"), x, extent);
+		}
+
+		double placeScope(Draft d, double y) {
+			d.y = y;
+			double above = Math.max(18, selfAbove(d.node.id)), below = 18;
+			for (Node node : model.timeline)
+				if (d.node.id.equals(node.get("scope"))) below = Math.max(below, labels.get(node.id).height + 24);
+			below = Math.max(below, branchBelow(d.node.id));
+			d.trackY = y + d.cardTop + Math.max(above, d.cardHeight / 2);
+			d.ownHeight = Math.max(d.ownHeight, d.trackY - y + below + PADDING);
+			entityY.put(d.node.id, d.trackY);
+			double next = y + d.ownHeight;
+			for (Node node : model.objects.values())
+				if (d.node.id.equals(node.get("owner"))) next = placeTrack(node, next + GAP);
+			for (Node node : model.participants.values())
+				if (d.node.id.equals(node.get("owner"))) next = placeTrack(node, next + GAP);
+			for (Node node : model.objects.values())
+				if (d.node.id.equals(node.get("owner")) && d.destroy == null)
+					d.end = Math.max(d.end, tracks.get(node.id).endX + 8);
+			for (Node node : model.participants.values())
+				if (d.node.id.equals(node.get("owner")) && d.destroy == null)
+					d.end = Math.max(d.end, tracks.get(node.id).endX + 8);
+			d.ownHeight = next - y + PADDING;
+			if (lanes == false) next += PADDING;
+			for (Draft child : drafts.values())
+				if (d.node.id.equals(child.node.get("parent"))) {
+					next = placeScope(child, next + GAP);
+					if (d.destroy == null)
+						d.end = Math.max(d.end, Math.max(child.x + child.cardWidth + PADDING * 2, child.end + PADDING));
 				}
-				// Prefer the target's neighborhood without wasting a whole shelf for a right-hand target.
-				final double ideal = Math.max(x, Math.min(card.targetX - card.width / 2, width - card.width - PADDING));
-				final double px = cards.size() == 1 ? ideal : x;
-				final boolean leader = y == top && card.targetX >= px + 8 && card.targetX <= px + card.width - 8;
-				panels.add(new Panel(card, px, y, top - GAP / 2, leader));
-				x = px + card.width + GAP;
-				rowHeight = Math.max(rowHeight, card.height);
+			d.subtreeHeight = next - y + PADDING;
+			return y + d.subtreeHeight;
+		}
+
+		double selfAbove(String id) {
+			double above = 0;
+			for (Node node : model.timeline)
+				if ("message".equals(node.kind) && id.equals(endpointEntity(node.get("from")))
+						&& id.equals(endpointEntity(node.get("to"))))
+					above = Math.max(above, labels.get(node.id).height + 40);
+			return above;
+		}
+
+		double placeTrack(Node node, double y) {
+			final Label label = entityLabel(node);
+			final Draft owner = drafts.get(node.get("owner"));
+			final boolean unknown = births.containsKey(node.id) == false;
+			final double birth = births.containsKey(node.id) ? births.get(node.id)
+					: owner == null ? PADDING * 2 : owner.start;
+			double end;
+			if (deaths.containsKey(node.id)) end = deaths.get(node.id) + 8;
+			else {
+				end = Math.max(birth, useEnds.containsKey(node.id) ? useEnds.get(node.id) : birth) + 28;
 			}
-			return cards.isEmpty() ? top : y + rowHeight + GAP;
+			final double start = Math.min(birth, end);
+			final double trackY = y + Math.max(label.height + 20, selfAbove(node.id));
+			final boolean beforeOwner = owner != null && start < owner.x;
+			final Label ownership = beforeOwner ? label("owned by " + display(owner.node.id), SName.autofacMuted) : null;
+			tracks.put(node.id, new TrackBox(node, label, start, trackY, end, unknown, deaths.containsKey(node.id) == false,
+					ownership, beforeOwner ? owner.x : start));
+			entityY.put(node.id, trackY);
+			ports.put(node.id, new Port(node, start, trackY));
+			width = Math.max(width, start + label.width + 24);
+			width = Math.max(width, end + 8);
+			if (ownership != null) width = Math.max(width, start + ownership.width + 24);
+			double below = ownership == null ? 28 : ownership.height + 44;
+			for (Node event : model.timeline)
+				if (node.id.equals(event.get("scope"))) below = Math.max(below, labels.get(event.id).height + 24);
+			below = Math.max(below, branchBelow(node.id));
+			return trackY + below;
 		}
-	}
 
-	static boolean isFailure(Outcome outcome) {
-		return outcome != null && "failure".equals(outcome.kind);
-	}
-
-	static SName eventRole(Node node, Outcome outcome) {
-		if (isFailure(outcome) || (outcome != null && "recursion".equals(outcome.kind)))
-			return SName.autofacFailure;
-		if ("dispose".equals(node.kind))
-			return SName.autofacDispose;
-		return outcome != null && "success".equals(outcome.kind) ? SName.autofacResolve : SName.autofacLifetime;
-	}
-
-	static String service(Node n) {
-		final String type = n.get("service", n.get("type", "unspecified"));
-		if (n.get("key") == null)
-			return type;
-		return type + " " + n.get("keyKind", "key") + " " + ("true".equals(n.get("keyWildcard")) ? "*" : "\"" + n.get("key") + "\"");
-	}
-
-	private static String eventDetail(Node n, Outcome o) {
-		if (o == null)
-			return "dispose".equals(n.kind) ? "" : "unspecified";
-		final StringBuilder text = new StringBuilder();
-		if (o.category != null)
-			text.append("missingRegistration".equals(o.category) && n.get("key") != null ? "Missing key" : humanize(o.category));
-		if (o.get("instance") != null)
-			appendDetail(text, o.get("instance") + (o.get("state") == null ? "" : " · " + o.get("state")));
-		else if (o.get("state") != null)
-			appendDetail(text, o.get("state"));
-		final String selected = o.get("selected");
-		if (selected != null) {
-			final String binding = selected.substring(0, selected.indexOf('.'));
-			if (binding.equals(n.get("scope")) == false)
-				appendDetail(text, "inherited · binding: " + binding);
+		String endpointEntity(String id) {
+			final Node event = model.events.get(id);
+			if (event == null) return id;
+			if ("event".equals(event.kind)) return event.get("scope");
+			if ("message".equals(event.kind)) return endpointEntity(event.get("to"));
+			return event.get("target", id);
 		}
-		if (o.get("empty") != null)
-			appendDetail(text, "empty collection");
-		if ("recursion".equals(o.kind))
-			appendDetail(text, o.get("confidence", "declared") + " · risk " + o.get("risk", "unspecified"));
-		if ("dispose".equals(n.kind) && isFailure(o))
-			appendDetail(text, "lifecycle unspecified");
-		return text.toString();
-	}
 
-	private static void appendDetail(StringBuilder text, String value) {
-		if (text.length() > 0)
-			text.append('\n');
-		text.append(value);
-	}
-
-	private static String factTitle(String key) {
-		if ("selected".equals(key))
-			return "Selected registration";
-		if ("sharing".equals(key))
-			return "Sharing scope";
-		if ("activation".equals(key))
-			return "Activation scope";
-		return humanize(key);
-	}
-
-	private static String humanize(String text) {
-		if (text.length() == 0)
-			return text;
-		final StringBuilder result = new StringBuilder();
-		for (int i = 0; i < text.length(); i++) {
-			final char c = text.charAt(i);
-			if (i > 0 && Character.isUpperCase(c))
-				result.append(' ');
-			result.append(i == 0 ? Character.toUpperCase(c) : Character.toLowerCase(c));
+		double y(String id) {
+			final Double y = entityY.get(endpointEntity(id));
+			return y == null ? top : y;
 		}
-		return result.toString();
-	}
 
-	private static String join(List<String> values, String separator) {
-		final StringBuilder result = new StringBuilder();
-		for (String value : values) {
-			if (result.length() > 0)
-				result.append(separator);
-			result.append(value);
+		double occurrenceY(Node node, String id) {
+			final EventBox anchor = events.get(id);
+			if (anchor != null) return anchor.y;
+			return y(id) + rowOffset(node, endpointEntity(id));
 		}
-		return result.toString();
+
+		void occurrences() {
+			for (Node node : model.timeline) {
+				final String target = "event".equals(node.kind) ? node.get("scope")
+						: "message".equals(node.kind) ? node.get("to") : node.get("target");
+				final double y = occurrenceY(node, target);
+				final EventBox box = new EventBox(node, labels.get(node.id), column(node), y, y(target));
+				events.put(node.id, box);
+				ports.put(node.id, new Port(node, box.x, box.y));
+			}
+		}
+
+		Point endpoint(String id, double x, double otherY, Node occurrence) {
+			if ("@left".equals(id)) return new Point(PADDING, otherY);
+			if ("@right".equals(id)) return new Point(horizon, otherY);
+			final EventBox event = events.get(id);
+			if (event != null) return new Point(event.x, event.y);
+			final Node node = model.registrations.get(id);
+			if (node != null && ports.containsKey(id)) return new Point(ports.get(id).x, ports.get(id).y);
+			return new Point(x, occurrenceY(occurrence, id));
+		}
+
+		void messages() {
+			for (Node node : model.timeline) {
+				if ("message".equals(node.kind) == false) continue;
+				final String from = node.get("from"), to = node.get("to");
+				Point a = endpoint(from, column(node), occurrenceY(node, to), node);
+				Point b = endpoint(to, column(node), a.y, node);
+				if (node.arrow != null) {
+					if (model.events.containsKey(from) == false && node.arrow.getInclination1() != 0)
+						a = new Point(a.x + node.arrow.getInclination1(), a.y);
+					if (model.events.containsKey(to) == false && node.arrow.getInclination2() != 0)
+						b = new Point(b.x + node.arrow.getInclination2(), b.y);
+				}
+				final Label label = labels.get(node.id);
+				final List<Point> route = new ArrayList<Point>();
+				route.add(a);
+				final double lx, ly;
+				if (a.y == b.y && a.x == b.x) {
+					final boolean reverse = node.arrow != null && node.arrow.isReverseDefine();
+					final double out = a.x + (reverse ? -1 : 1) * Math.max(32, label.width + 16);
+					final double loopY = a.y - label.height - 32;
+					route.add(new Point(out, a.y)); route.add(new Point(out, loopY));
+					route.add(new Point(a.x, loopY)); route.add(b);
+					lx = Math.min(a.x, out) + 8; ly = loopY + 8;
+				} else if (a.y == b.y) {
+					route.add(b);
+					lx = Math.min(a.x, b.x) + 8; ly = a.y - label.height - 12;
+				} else {
+					if (a.x != b.x && a.y != b.y && (node.arrow == null
+							|| node.arrow.getInclination1() == 0 && node.arrow.getInclination2() == 0))
+						route.add(new Point(b.x, a.y));
+					route.add(b);
+					lx = Math.max(a.x, b.x) + 10;
+					ly = Math.min(a.y, b.y) + Math.max(10, (Math.abs(b.y - a.y) - label.height) / 2);
+				}
+				add(new Connector(node, "message", from, to, label, route, lx, ly,
+						node.arrow == null ? ArrowConfiguration.withDirectionNormal() : node.arrow));
+				events.put(node.id, new EventBox(node, label, b.x, b.y));
+				ports.put(node.id, new Port(node, b.x, b.y));
+			}
+		}
+
+		void references() {
+			int index = 0;
+			double referenceChannel = top - 12;
+			for (Node node : model.relations) {
+				final String from = node.get("from"), to = node.get("to");
+				final Port source = ports.get(from), target = ports.get(to);
+				if (source == null || target == null) continue;
+				final Label label = label(node, node.get("label", ""), SName.reference);
+				final Double planned = relationColumns.get(node.id);
+				final double x = planned == null ? Math.max(source.x, target.x) + 16 + index * 12 : planned;
+				final Point a = entityPoint(from, x), b = entityPoint(to, x);
+				final List<Point> route = new ArrayList<Point>(); route.add(a);
+				final double lx, ly;
+				if (model.registrations.containsKey(from) || model.registrations.containsKey(to)
+						|| model.modules.containsKey(from) || model.modules.containsKey(to)) {
+					final boolean targetRow = model.registrations.containsKey(to) || model.modules.containsKey(to);
+					final Point row = targetRow ? b : a, occurrence = targetRow ? a : b;
+					final double gutter = row.x + 12 + index * 8;
+					final List<Point> lookup = new ArrayList<Point>();
+					lookup.add(occurrence); lookup.add(new Point(gutter, occurrence.y));
+					lookup.add(new Point(gutter, row.y)); lookup.add(row);
+					if (targetRow == false) Collections.reverse(lookup);
+					route.clear(); route.addAll(lookup);
+					lx = Math.min(occurrence.x, gutter) + 8;
+					ly = Math.min(occurrence.y, row.y) - label.height - 8;
+				} else if (a.y == b.y) {
+					referenceChannel -= label.height + 12;
+					final double channel = referenceChannel;
+					route.add(new Point(a.x, channel)); route.add(new Point(b.x, channel)); route.add(b);
+					lx = Math.min(a.x, b.x) + 8; ly = channel - label.height - 4;
+				} else {
+					if (a.x != b.x) route.add(model.events.containsKey(to) ? new Point(a.x, b.y) : new Point(b.x, a.y));
+					route.add(b); lx = Math.max(a.x, b.x) + 10; ly = (a.y + b.y - label.height) / 2;
+				}
+				add(new Connector(node, "reference", from, to, label, route, lx, Math.max(2, ly),
+						node.arrow == null ? ArrowConfiguration.withDirectionNormal() : node.arrow));
+				index++;
+			}
+			for (Draft d : drafts.values())
+				for (ConstructionRow row : boxes.get(d.node.id).rows)
+					if ("install".equals(row.node.kind)) {
+						final String from = row.node.get("target");
+						if (ports.containsKey(from) == false) continue;
+						final double x = boxes.get(d.node.id).constructionX - 12;
+						final Point a = entityPoint(from, x);
+						final Point b = new Point(boxes.get(d.node.id).constructionX, row.y + row.label.height / 2);
+						final List<Point> route = new ArrayList<Point>(); route.add(a);
+						route.add(new Point(x, a.y)); route.add(new Point(x, b.y)); route.add(b);
+						final Label label = label("", SName.autofacModule);
+						add(new Connector(row.node, "provenance", from, row.node.id, label, route,
+								x + 8, Math.max(a.y + 8, (a.y + b.y - label.height) / 2), ArrowConfiguration.withDirectionNormal()));
+					}
+		}
+
+		Point entityPoint(String id, double x) {
+			final Port port = ports.get(id);
+			if (model.events.containsKey(id) || model.registrations.containsKey(id)) return new Point(port.x, port.y);
+			if (model.scopes.containsKey(id) == false && model.objects.containsKey(id) == false
+					&& model.participants.containsKey(id) == false) return new Point(port.x, port.y);
+			final TrackBox track = tracks.get(id);
+			if (track != null) x = Math.max(track.x, Math.min(track.endX, x));
+			final ScopeBox scope = boxes.get(id);
+			if (scope != null) x = Math.max(scope.activeStartX, Math.min(scope.trackEndX, x));
+			return new Point(x, port.y);
+		}
+
+		void obstacles() {
+			for (ModuleBox module : modules) {
+				obstacles.add(new Obstacle(module.x, module.y, module.width, module.height));
+				noteObstacles.add(new Obstacle(module.x, module.y, module.width, module.height));
+			}
+			for (ScopeBox scope : boxes.values()) {
+				obstacles.add(new Obstacle(scope.headerX, scope.headerY, scope.header.width, scope.header.height));
+				obstacles.add(new Obstacle(scope.subtitleX, scope.subtitleY, scope.subtitle.width, scope.subtitle.height));
+				obstacles.add(new Obstacle(scope.constructionX, scope.constructionY, scope.constructionWidth, scope.constructionHeight));
+				labelBoundaries.add(new Obstacle(scope.x, scope.y - 3, scope.width, 6));
+				labelBoundaries.add(new Obstacle(scope.x, scope.bottom() - 3, scope.width, 6));
+				labelBoundaries.add(new Obstacle(scope.x - 3, scope.y, 6, scope.height));
+				labelBoundaries.add(new Obstacle(scope.right() - 3, scope.y, 6, scope.height));
+			}
+			for (TrackBox track : tracks.values()) {
+				obstacles.add(new Obstacle(track.labelX, track.labelY, track.label.width, track.label.height + 2));
+				if (track.ownership != null)
+					obstacles.add(new Obstacle(track.ownershipX, track.ownershipY, track.ownership.width, track.ownership.height));
+			}
+			for (EventBox event : events.values())
+				if ("event".equals(event.node.kind))
+					obstacles.add(new Obstacle(event.labelX, event.labelY, event.label.width, event.label.height));
+			for (GroupBox group : groups) {
+				if (group.label.height > 0)
+					obstacles.add(new Obstacle(group.x, group.y, group.label.width + 20, group.label.height + 12));
+				for (Branch branch : group.branches)
+					obstacles.add(new Obstacle(branch.x + 8, group.y + 5, branch.label.width, branch.label.height));
+			}
+			for (NoteBox note : notes)
+				obstacles.add(new Obstacle(note.x, note.y, note.width, note.height));
+			noteObstacles.clear();
+			noteObstacles.addAll(obstacles);
+			noteObstacles.addAll(labelBoundaries);
+			for (TrackBox track : tracks.values()) {
+				noteObstacles.add(new Obstacle(track.x - 2, track.y - 2, track.endX - track.x + 4, 4));
+				if (track.ownership != null) noteObstacles.add(new Obstacle(
+						track.ownershipX, track.ownershipY, track.ownership.width, track.ownership.height));
+			}
+			for (ScopeBox scope : boxes.values()) {
+				if (scope.created)
+					noteObstacles.add(new Obstacle(scope.activeStartX - 2, scope.trackY - 2,
+							scope.trackEndX - scope.activeStartX + 4, 4));
+				noteObstacles.add(new Obstacle(scope.x, scope.y - 2, scope.width, 4));
+				noteObstacles.add(new Obstacle(scope.x, scope.bottom() - 2, scope.width, 4));
+				noteObstacles.add(new Obstacle(scope.x - 2, scope.y, 4, scope.height));
+				noteObstacles.add(new Obstacle(scope.right() - 2, scope.y, 4, scope.height));
+			}
+			for (GroupBox group : groups) {
+				noteObstacles.add(new Obstacle(group.x, group.y - 2, group.width, 4));
+				noteObstacles.add(new Obstacle(group.x, group.y + group.height - 2, group.width, 4));
+				noteObstacles.add(new Obstacle(group.x - 2, group.y, 4, group.height));
+				noteObstacles.add(new Obstacle(group.x + group.width - 2, group.y, 4, group.height));
+			}
+			for (ActivationBox activation : activations)
+				noteObstacles.add(new Obstacle(activation.x1 - 3, activation.y - 7,
+						activation.x2 - activation.x1 + 6, 14));
+		}
+
+		boolean clearLabel(Label label, double x, double y) {
+			for (Obstacle obstacle : obstacles)
+				if (obstacle.intersects(x, y, label.width, label.height)) return false;
+			for (Obstacle boundary : labelBoundaries)
+				if (boundary.intersects(x, y, label.width, label.height)) return false;
+			return true;
+		}
+
+		boolean clearRoute(List<Point> points) {
+			for (int i = 1; i < points.size(); i++)
+				for (Obstacle obstacle : obstacles)
+					if (obstacle.crosses(points.get(i - 1), points.get(i))) return false;
+			return true;
+		}
+
+		/** Only obstructed segments use the orthogonal visibility grid; ordinary calls remain straight. */
+		List<Point> avoidText(List<Point> route) {
+			if (clearRoute(route)) return route;
+			final List<Point> result = new ArrayList<Point>();
+			result.add(route.get(0));
+			for (int i = 1; i < route.size(); i++) {
+				final Point a = route.get(i - 1), b = route.get(i);
+				boolean clear = true;
+				for (Obstacle obstacle : obstacles)
+					if (obstacle.crosses(a, b)) { clear = false; break; }
+				if (clear) result.add(b);
+				else {
+					final List<Point> detour = routeBetween(a, b);
+					for (int j = 1; j < detour.size(); j++) result.add(detour.get(j));
+				}
+			}
+			return result;
+		}
+
+		List<Point> routeBetween(Point a, Point b) {
+			final TreeSet<Double> horizontal = new TreeSet<Double>(), vertical = new TreeSet<Double>();
+			horizontal.add(a.x); horizontal.add(b.x); vertical.add(a.y); vertical.add(b.y);
+			final List<Obstacle> blocking = new ArrayList<Obstacle>();
+			for (Obstacle obstacle : obstacles) {
+				if (obstacle.contains(a) || obstacle.contains(b)) continue;
+				blocking.add(obstacle);
+				horizontal.add(Math.max(2, obstacle.x - 8)); horizontal.add(obstacle.right + 8);
+				vertical.add(Math.max(2, obstacle.y - 8)); vertical.add(obstacle.bottom + 8);
+			}
+			final List<Double> xs = new ArrayList<Double>(horizontal), ys = new ArrayList<Double>(vertical);
+			final int nx = xs.size(), ny = ys.size();
+			final int start = Collections.binarySearch(ys, a.y) * nx + Collections.binarySearch(xs, a.x);
+			final int finish = Collections.binarySearch(ys, b.y) * nx + Collections.binarySearch(xs, b.x);
+			final double[] distance = new double[nx * ny];
+			final int[] previous = new int[distance.length];
+			Arrays.fill(distance, Double.POSITIVE_INFINITY); Arrays.fill(previous, -1);
+			distance[start] = 0;
+			final PriorityQueue<RouteStep> pending = new PriorityQueue<RouteStep>();
+			pending.add(new RouteStep(start, 0, Math.abs(a.x - b.x) + Math.abs(a.y - b.y)));
+			while (pending.isEmpty() == false) {
+				final RouteStep step = pending.remove();
+				if (step.cost != distance[step.index]) continue;
+				if (step.index == finish) break;
+				final int ix = step.index % nx, iy = step.index / nx;
+				final double x = xs.get(ix), y = ys.get(iy);
+				for (int direction = 0; direction < 4; direction++) {
+					final int tx = ix + (direction == 0 ? -1 : direction == 1 ? 1 : 0);
+					final int ty = iy + (direction == 2 ? -1 : direction == 3 ? 1 : 0);
+					if (tx < 0 || tx >= nx || ty < 0 || ty >= ny) continue;
+					final double px = xs.get(tx), py = ys.get(ty);
+					boolean clear = true;
+					for (Obstacle obstacle : blocking)
+						if (obstacle.crosses(x, y, px, py)) { clear = false; break; }
+					if (clear == false) continue;
+					final int next = ty * nx + tx;
+					final double cost = step.cost + Math.abs(px - x) + Math.abs(py - y);
+					if (cost >= distance[next]) continue;
+					distance[next] = cost; previous[next] = step.index;
+					pending.add(new RouteStep(next, cost, cost + Math.abs(px - b.x) + Math.abs(py - b.y)));
+				}
+			}
+			if (previous[finish] < 0 && finish != start)
+				return new ArrayList<Point>(Arrays.asList(a, b));
+			final List<Point> reversed = new ArrayList<Point>();
+			for (int at = finish; at >= 0; at = previous[at])
+				reversed.add(new Point(xs.get(at % nx), ys.get(at / nx)));
+			Collections.reverse(reversed);
+			final List<Point> result = new ArrayList<Point>();
+			for (Point point : reversed) {
+				if (result.size() >= 2) {
+					final Point p = result.get(result.size() - 2), q = result.get(result.size() - 1);
+					if (p.x == q.x && q.x == point.x || p.y == q.y && q.y == point.y)
+						result.remove(result.size() - 1);
+				}
+				result.add(point);
+			}
+			return result;
+		}
+
+		Point connectorLabel(Connector connector, List<Point> route) {
+			final Label label = connector.label;
+			if (label.height == 0 || clearLabel(label, connector.labelX, connector.labelY))
+				return new Point(connector.labelX, connector.labelY);
+			for (int i = 1; i < route.size(); i++) {
+				final Point a = route.get(i - 1), b = route.get(i);
+				if (a.x == b.x) {
+					final double low = Math.min(a.y, b.y) + 8, high = Math.max(a.y, b.y) - label.height - 8;
+					for (double y = low; y <= high; y += 8) {
+						if (clearLabel(label, a.x + 10, y)) return new Point(a.x + 10, y);
+						if (clearLabel(label, a.x - label.width - 10, y)) return new Point(a.x - label.width - 10, y);
+					}
+				} else if (a.y == b.y) {
+					final double low = Math.min(a.x, b.x) + 8, high = Math.max(a.x, b.x) - label.width - 8;
+					for (double x = low; x <= high; x += 8) {
+						if (clearLabel(label, x, a.y - label.height - 10)) return new Point(x, a.y - label.height - 10);
+						if (clearLabel(label, x, a.y + 10)) return new Point(x, a.y + 10);
+					}
+				}
+			}
+			// Search the same local column, never a synthetic post-disposal/global-right channel.
+			for (double delta = 8; ; delta += 8) {
+				if (connector.labelY - delta >= 2 && clearLabel(label, connector.labelX, connector.labelY - delta))
+					return new Point(connector.labelX, connector.labelY - delta);
+				if (clearLabel(label, connector.labelX, connector.labelY + delta))
+					return new Point(connector.labelX, connector.labelY + delta);
+			}
+		}
+
+		void add(Connector connector) {
+			final List<Point> route = avoidText(connector.points);
+			final Point label = connectorLabel(connector, route);
+			if (route != connector.points || label.x != connector.labelX || label.y != connector.labelY)
+				connector = new Connector(connector.node, connector.kind, connector.from, connector.to,
+						connector.label, route, label.x, label.y, connector.arrow);
+			connectors.add(connector);
+			if (connector.label.width > 0)
+				obstacles.add(new Obstacle(label.x, label.y, connector.label.width, connector.label.height));
+			if (connector.label.width > 0 || connector.label.height > 0) {
+				width = Math.max(width, connector.labelX + connector.label.width + PADDING);
+				bottom = Math.max(bottom, connector.labelY + connector.label.height + PADDING);
+			}
+			for (Point p : connector.points) { width = Math.max(width, p.x + PADDING); bottom = Math.max(bottom, p.y + PADDING); }
+		}
+
+		void frames() {
+			final List<Node> starters = new ArrayList<Node>();
+			final List<Node> branchStarts = new ArrayList<Node>();
+			final List<Integer> branchBegin = new ArrayList<Integer>();
+			final List<Integer> depths = new ArrayList<Integer>();
+			for (int index = 0; index < model.timeline.size(); index++) {
+				final Node node = model.timeline.get(index);
+				if ("groupStart".equals(node.kind)) {
+					starters.add(node);
+					branchStarts.add(node);
+					branchBegin.add(index + 1);
+					depths.add(starters.size());
+				} else if ("groupElse".equals(node.kind)) {
+					int at = branchOf(starters, node.get("group"), branchStarts);
+					if (at >= 0) {
+						emitGroup(branchStarts.get(at), branchBegin.get(at), index, depths.get(at));
+						branchStarts.set(at, node);
+						branchBegin.set(at, index + 1);
+					}
+				} else if ("groupEnd".equals(node.kind) && starters.isEmpty() == false) {
+					final int at = branchOf(starters, node.get("group"), branchStarts);
+					final int top = starters.size() - 1;
+					final int which = at >= 0 ? at : top;
+					emitGroup(branchStarts.get(which), branchBegin.get(which), index, depths.get(which));
+					for (int i = branchBegin.size() - 1; i >= top; i--) {
+						starters.remove(i); branchStarts.remove(i); branchBegin.remove(i); depths.remove(i);
+					}
+				}
+			}
+		}
+
+		int branchOf(List<Node> starters, String id, List<Node> branchStarts) {
+			for (int i = starters.size() - 1; i >= 0; i--)
+				if (starters.get(i).id.equals(id) || branchStarts.get(i).id.equals(id)) return i;
+			return starters.isEmpty() ? -1 : starters.size() - 1;
+		}
+
+		void emitGroup(Node starter, int begin, int end, int depth) {
+			final Map<String, double[]> regions = new LinkedHashMap<String, double[]>();
+			double minX = Double.POSITIVE_INFINITY, maxX = 0;
+			for (int i = begin; i < end; i++) {
+				final Node node = model.timeline.get(i);
+				final List<String> targets = new ArrayList<String>();
+				if ("event".equals(node.kind) || "activate".equals(node.kind) || "deactivate".equals(node.kind)
+						|| "create".equals(node.kind) || "destroy".equals(node.kind))
+					targets.add(node.get("scope", node.get("target")));
+				else if ("message".equals(node.kind)) {
+					targets.add(endpointEntity(node.get("from"))); targets.add(endpointEntity(node.get("to")));
+				} else if ("note".equals(node.kind)) {
+					final String noteTargets = node.get("targets", node.get("target", ""));
+					for (String target : noteTargets.split(",")) targets.add(endpointEntity(target.trim()));
+				} else continue;
+				double topPad = 12, bottomPad = 12;
+				if ("event".equals(node.kind)) bottomPad = labels.get(node.id).height + 18;
+				else if ("message".equals(node.kind)) { topPad = labels.get(node.id).height + 10; bottomPad = labels.get(node.id).height + 10; }
+				else if ("note".equals(node.kind)) { topPad = labels.get(node.id).height + 12; bottomPad = labels.get(node.id).height + 12; }
+				for (String target : targets) {
+					if (target == null || ports.containsKey(target) == false) continue;
+					final double targetY = occurrenceY(node, target);
+					final String scope = scopeForEntity(target);
+					final String key = scope == null ? "" : scope;
+					double[] bounds = regions.get(key);
+					if (bounds == null) { bounds = new double[] { targetY - topPad, targetY + bottomPad }; regions.put(key, bounds); }
+					else { bounds[0] = Math.min(bounds[0], targetY - topPad); bounds[1] = Math.max(bounds[1], targetY + bottomPad); }
+					minX = Math.min(minX, column(node) - 10);
+					maxX = Math.max(maxX, column(node) + labels.get(node.id).width + 10);
+				}
+			}
+			if (regions.isEmpty()) return;
+			Label groupLabel = labels.get(starter.id);
+			if ("groupElse".equals(starter.kind)) groupLabel = label("else " + groupLabel.text, SName.group);
+			final List<String> regionOrder = new ArrayList<String>(regions.keySet());
+			Collections.sort(regionOrder, new Comparator<String>() {
+				public int compare(String first, String second) {
+					return Double.compare(regions.get(first)[0], regions.get(second)[0]);
+				}
+			});
+			final double[] range = groupRanges.get(starter.id);
+			final String logicalId = logicalGroups.containsKey(starter.id) ? logicalGroups.get(starter.id) : starter.id;
+			final Label emptyLabel = label("", SName.group);
+			boolean continuation = false;
+			double continuationY = -1;
+			for (String key : regionOrder) {
+				double minY = regions.get(key)[0], maxY = regions.get(key)[1];
+				double top = Math.max(2, minY - groupLabel.height - 20 - Math.max(0, 3 - depth) * 12);
+				double frameBottom = maxY + 8 + Math.max(0, 3 - depth) * 8;
+				double x = range == null ? Math.min(column(starter) - 10, minX) : range[0];
+				double frameWidth = range == null ? Math.max(groupLabel.width + 24, maxX - x) : range[1] - range[0];
+				if (key.length() > 0 && boxes.containsKey(key)) {
+					final ScopeBox scope = boxes.get(key);
+					top = Math.max(scope.y + 6, top);
+					frameBottom = Math.min(scope.bottom() - 6, Math.max(top + groupLabel.height + 18, frameBottom));
+					if (range == null) {
+						x = Math.max(scope.x + 6, x);
+						frameWidth = Math.max(groupLabel.width + 24, Math.min(scope.right() - 6, x + frameWidth) - x);
+					}
+				}
+				final String uid = regions.size() == 1 ? "af-group-" + starter.id
+						: "af-group-" + starter.id + (key.length() == 0 ? "-external" : "-" + key);
+				final GroupBox group = new GroupBox(starter, uid, logicalId, continuation ? emptyLabel : groupLabel, x, top,
+						frameWidth, frameBottom - top, new ArrayList<Branch>(), continuation, continuationY);
+				groups.add(group);
+				width = Math.max(width, group.x + group.width + PADDING);
+				bottom = Math.max(bottom, group.y + group.height + PADDING);
+				continuation = true;
+				continuationY = group.y + group.height;
+			}
+		}
+
+		String scopeForEntity(String id) {
+			if (model.scopes.containsKey(id)) return id;
+			final Node entity = model.entities.get(id);
+			if (entity != null && entity.get("owner") != null && model.scopes.containsKey(entity.get("owner")))
+				return entity.get("owner");
+			return null;
+		}
+
+		void activities() {
+			final Map<String, List<Node>> active = new LinkedHashMap<String, List<Node>>();
+			for (Node node : model.timeline) {
+				final String target = node.get("target");
+				if ("activate".equals(node.kind)) {
+					if (active.containsKey(target) == false) active.put(target, new ArrayList<Node>());
+					active.get(target).add(node);
+				} else if ("deactivate".equals(node.kind) && active.containsKey(target) && active.get(target).isEmpty() == false) {
+					final Node start = active.get(target).remove(active.get(target).size() - 1);
+					activations.add(new ActivationBox(start, target, column(start), column(node), occurrenceY(start, target) + active.get(target).size() * 4, false));
+				}
+			}
+			for (Map.Entry<String, List<Node>> entry : active.entrySet())
+				for (int i = 0; i < entry.getValue().size(); i++) {
+					final Node start = entry.getValue().get(i);
+					activations.add(new ActivationBox(start, entry.getKey(), column(start), entityEnd(entry.getKey()),
+							occurrenceY(start, entry.getKey()) + i * 4, true));
+				}
+		}
+
+		double entityEnd(String id) {
+			final TrackBox track = tracks.get(id);
+			if (track != null) return track.endX;
+			final ScopeBox scope = boxes.get(id);
+			if (scope != null) return scope.trackEndX;
+			return horizon;
+		}
+
+		void userNotes() {
+			for (Node node : model.timeline) {
+				if ("note".equals(node.kind) == false) continue;
+				final Label label = labels.get(node.id);
+				final String targets = node.get("targets", node.get("target", ""));
+				double minY = Double.POSITIVE_INFINITY, maxY = 0, minX = Double.POSITIVE_INFINITY, maxX = 0;
+				for (String target : targets.split(",")) {
+					final String id = target.trim();
+					if (ports.containsKey(id)) {
+						final Node occurrence = model.events.get(id);
+						final double targetY = occurrence != null && "message".equals(occurrence.kind)
+								? (y(occurrence.get("from")) + y(occurrence.get("to"))) / 2 : y(id);
+						minY = Math.min(minY, targetY); maxY = Math.max(maxY, targetY);
+						minX = Math.min(minX, ports.get(id).x); maxX = Math.max(maxX, ports.get(id).x);
+					}
+				}
+				if (minY == Double.POSITIVE_INFINITY) {
+					minY = top; maxY = Math.min(bottom, top + 80);
+					minX = column(node); maxX = column(node);
+				}
+				final NoteBox size = new NoteBox(node, label, 0, 0, 0);
+				final double preferredX = Math.max(PADDING, (minX + maxX - size.width) / 2);
+				final String position = node.get("position", "over");
+				final boolean preferBelow = "right".equals(position) || "bottom".equals(position);
+				final double above = minY - size.height - 16, below = maxY + 16;
+				NoteBox chosen = null;
+				for (int row = 0; row < 24 && chosen == null; row++) {
+					final double firstY = preferBelow ? below + row * (size.height + 8) : above - row * (size.height + 8);
+					final double secondY = preferBelow ? above - row * (size.height + 8) : below + row * (size.height + 8);
+					chosen = noteShelf(node, label, size, firstY, preferredX);
+					if (chosen == null) chosen = noteShelf(node, label, size, secondY, preferredX);
+				}
+				if (chosen == null) chosen = noteShelf(node, label, size, obstacleBottom() + 20, preferredX);
+				if (chosen == null) chosen = new NoteBox(node, label, preferredX, obstacleBottom() + 20, 0);
+				notes.add(chosen);
+				noteObstacles.add(new Obstacle(chosen.x, chosen.y, chosen.width, chosen.height));
+				obstacles.add(new Obstacle(chosen.x, chosen.y, chosen.width, chosen.height));
+				width = Math.max(width, chosen.x + chosen.width + PADDING);
+				bottom = Math.max(bottom, chosen.y + chosen.height + PADDING);
+			}
+		}
+
+		NoteBox noteShelf(Node node, Label label, NoteBox size, double y, double preferredX) {
+			if (y < PADDING) return null;
+			for (int shift = 0; shift < 8; shift++) {
+				final double[] positions = shift == 0 ? new double[] { preferredX }
+						: new double[] { preferredX + shift * 24, preferredX - shift * 24 };
+				for (double x : positions) {
+					if (x < PADDING) continue;
+					final NoteBox candidate = new NoteBox(node, label, x, y, 0);
+					if (noteClear(candidate)) return candidate;
+				}
+			}
+			return null;
+		}
+
+		boolean noteClear(NoteBox note) {
+			for (Obstacle obstacle : noteObstacles)
+				if (obstacle.intersects(note.x, note.y, note.width, note.height)) return false;
+			return true;
+		}
+
+		double obstacleBottom() {
+			double result = bottom;
+			for (Obstacle obstacle : noteObstacles) result = Math.max(result, obstacle.bottom);
+			return result;
+		}
 	}
 }

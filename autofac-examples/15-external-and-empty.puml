@@ -1,27 +1,21 @@
 @startautofac
-' Pre-existing external objects are not created by a request alias.
-' An empty collection can be declared successful without inventing registrations.
-composition "15 - External ownership and successful emptiness" {
-	instance clock: FixedClock owner external
-	lifetime system root {
-		register clockBinding: IClock instance clock ownership external
-	}
+title 15 - External clock and an explicitly empty collection
 
-	resolve time: IClock from system
-	expect time success {
-		selected system.clockBinding
-		instance clock
-		state reused
-		owner external
-	}
-	resolve plugins: IEnumerable<IPlugin> from system
-	expect plugins success {
-		empty
-		message "This authored plugin set is intentionally empty"
-	}
-
-	dispose system
-	expand time trace
-	expand plugins
+object "clock : FixedClock (external)" as clock
+lifetime "System" as system {
+	register clockBinding: IClock instance clock ownership external
 }
+create system
+
+event time on system : Resolve IClock
+clock --> system : returns clock
+time ..> system.clockBinding
+
+event plugins on system : Resolve IEnumerable<IPlugin>
+object "plugins : IPlugin[0]" as pluginArray ownedBy system
+create pluginArray
+pluginArray --> system : [] (zero plugins)
+
+destroy pluginArray
+destroy system
 @endautofac

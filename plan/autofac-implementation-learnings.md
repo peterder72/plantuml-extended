@@ -1,178 +1,156 @@
 # Autofac implementation learnings
 
-These notes capture decisions and observed results from implementing and verifying the native Autofac diagram. They are implementation guidance, not a replacement for the [language contract](autofac-lifetime-dsl-design.md). Verification results below describe the runs performed during this work; they are not a claim about subsequent changes.
+These notes record implementation decisions and observed results for the native Autofac diagram. They are engineering guidance, not a replacement for the [language contract](autofac-lifetime-dsl-design.md).
 
-## 1. Keep the diagram engine separate from Autofac execution
+## 1. The diagram is an authored document, not a solver
 
-The most important requirement was clarified directly by the user: PlantUML is a **diagram engine, not a solver engine**.
+The user's requirement is explicit: PlantUML is a **diagram engine**, not an Autofac executor.
 
-- Registrations, sharing policies, decorators and dependency descriptions are descriptive configuration.
-- Selection, activation context, sharing scope, ownership, object identity, new/reused state and runtime paths are independent authored facts.
-- A resolve without an expectation is an **unspecified request**, not an inferred success or failure.
-- Do not manufacture an object identity from an event alias or predict an outcome from an opaque delegate label.
-- `confidence derived` means the author derived the fact; it does not authorize engine inference.
-- Delegate-template calls describe possible calls. Only named runtime calls create actual event nodes.
-- A supported property cycle can be explicitly successful. A recursive resolve is not automatically a guaranteed stack overflow.
+- Registrations, sharing policies, decorators and delegate bodies are descriptive configuration. They do not create objects, choose registrations, predict failures or imply execution.
+- Lifetimes, objects, events, messages, creation/destruction, ownership and relationships are authored. Identity is never manufactured from an operation alias.
+- A factory body is an opaque label. Only an explicit message shows that the factory was invoked.
+- A marker's shape, label and color are presentation. There is no closed outcome enum and no engine taxonomy that changes lifecycle semantics.
+- The binder checks only structural facts: aliases, ancestry, declaration order, installation prerequisites, explicit chronology and destruction ordering.
 
-Structural validation is still useful: unknown or ambiguous identities, duplicate declarations, impossible chronology, causal reuse, installation prerequisites and duplicate terminal disposal are language errors. Invalid lifetime use can remain drawable with a structural warning.
+An earlier implementation used `expect ... { ... }` facts (`selected`, `instance`, `state`, `category`, `path`, `cycle`, `chain`, `confidence`). Most of them became bottom-panel text; `cycle` even produced a floating arc not connected to any real element, and template calls were drawn as runtime trajectories. That design was removed rather than repaired.
 
-## 2. Preserve distinctions in both model and drawing
+## 2. Generic language principles
 
-Scope, registration, resolve event and returned object are different identities. Likewise, request origin, selected registration location, activation scope, sharing scope and disposal owner must not be collapsed into one scope field.
+- **A marker is a real occurrence.** `event [alias] on SCOPE marker SHAPE : LABEL` is a point on that scope's track. A message immediately following it in the same scope starts at the marker, not at a later detached point. An explicit alias can anchor later messages.
+- **Messages are native arrows.** `->`, `-->`, `<--`, self, dotted, external and multicasts use the native sequence command/model and retain the native `ArrowConfiguration`. Direction must not be flipped to make drawing convenient. A return points at its caller regardless of vertical position; a static reference points from the referring element to the referenced element.
+- **Static references are not events.** `A ..> B : label` connects existing entities, event occurrences or registration rows without adding chronology. Use it for selections, property relationships, decorator wrapping, provenance or sharing boundaries.
+- **Objects are explicit identities.** One `object` declaration is one rail. Several results/references point to the same rail. `ownedBy` means disposal ownership, not creation context; an object can exist before its owner frame starts.
+- **Creation and destruction are explicit.** A lifetime declaration configures construction; `create` starts activity. `destroy` never cascades. A failed disposal is an ordinary labelled event with no `destroy`. A rejected construction is construction plus an event/note and no active track.
+- **Do not display internal IDs.** Generated `$af-*` identities exist only for parsing/drawing. Labels come from the authored label.
 
-Practical consequences:
+## 3. Native sequence reuse and its seams
 
-- Installed registrations need installation-local qualified identities, such as `request.module1.foo`, while retaining their module-definition provenance.
-- Display decorator declaration order separately from an authored outer-to-inner instance chain.
-- Parent disposal must not synthesize child disposal. If containment would falsify independent ends, use aligned ancestry lanes rather than stretching the parent envelope.
-- A failed disposal attempt does not provide a terminal end. Leave subsequent lifecycle unspecified until another explicit terminal disposal.
-- Bare `Owned<T>` does not create a diagram scope. An explicitly bound Owned child shares its acquisition chronology node; do not insert an extra artificial time step.
-- `parallel` removes sibling-order edges. Stable placement order is not causal order, and cannot justify object reuse.
-- Objects introduced by outcome facts must not also be labeled as **pre-existing** objects. That contradictory duplicate presentation was caught during visual inspection and removed.
+`AutofacDiagram` subclasses `SequenceDiagram`, which is public, non-final and exposes an overridable `getTextBlock`.
 
-## 3. Native diagram integration has more than one dispatcher
+- Native commands require a `SequenceDiagram` receiver; the generic command bridge casts to it. Passing them to a `TitledDiagram` cannot work.
+- A protected constructor accepting `DiagramType` is needed because `TitledDiagram.getDiagramType()` is final. The existing public `SequenceDiagram` constructor remains unchanged.
+- A narrow protected event-append seam is used for custom marker events. Do not widen this into a general abstraction over sequence internals.
+- `autonumber`, `newpage`, `autoactivate`, `hide unlinked`, footbox and similar bookkeeping commands are deliberately not registered. Only forms with a real Autofac rendering interpretation are accepted.
+- Native `create` in a sequence has pending-reception semantics. Autofac's explicit `create`/`destroy` must bypass that protocol or a lifetime cannot be created without an unrelated following message.
+- Native `return` targets its activation context. When the caller is an event alias, normalize the generated return endpoint back to the owning scope so the return does not attach to the old resolve marker.
+- Native stereotyping is propagated through narrow `getStereotype()` accessors rather than reparsing source text. Participant labels already contain stereotype display text; do not prepend it twice.
+- Unsupported native extras must fail with a located error, not be silently accepted: URLs, curly anchors, merged/parallel notes, parallel-group prefixes and compound theme colors.
 
-The shared implementation is in `src/main/java/net/sourceforge/plantuml/autofac/`.
+## 4. Parsing and binding pitfalls
 
-Native integration required:
+### Incremental parsing, not full rescans
 
-- `DiagramType.AUTOFAC`, start-directive recognition and its style-name mapping.
-- Factory registration in **both** `PSystemBuilder` and `teavm/PSystemBuilder2`.
-- Embedded-diagram recognition in `EmbeddedDiagram`.
-- Directive and vocabulary registration in `syntax/LanguageDescriptor`.
+Structural declarations are parsed line by line by a positioned parser. Native sequence commands handle messages, groups, notes, activations and participants. Do not make a catch-all multiline command: nested braces and `}` inside quoted labels break it.
 
-The browser and headless TeaVM paths both depend on `PSystemBuilder2`. Registering only the JVM factory can leave a feature working in Java but unsupported in JavaScript.
+Construction rows are accumulated in a simple mutable list and frozen once when `}` is reached. Earlier code cloned the complete child list and rescanned the statement list for every registration, which was quadratic.
 
-Keep parser/model/layout state per diagram. Factories and dispatchers can be reused across unrelated diagram types; mixed-type rendering is an important state-leakage smoke check.
+Type normalization uses a precompiled generic-spacing pattern. Do not allocate a regex per type token.
 
-## 4. Parsing and diagnostic pitfalls
+### Finalize once, at the last significant line
 
-### Incremental lines, not repeated block rescans
+Validation must run once, after the last significant original body line. Waiting for `checkFinalError` gives the end directive as the position and repeats work. The parser tracks whether a construction block or group is still open and reports that opener on failure.
 
-Common PlantUML commands are registered before the Autofac catchall line command. The catchall tokenizes each line once; the retained positioned tokens are parsed and bound when the composition closes.
+For a located binder error, return `CommandExecutionResult.newDiagram(PSystemErrorUtils.buildV2(...))` with a trace ending at the offending `StringLocated`. Trailing blank lines and trailing comments must not move the error to EOF.
 
-Avoid using a generic multiline command that terminates at the first `}`: delegate, dependency, lifetime and composition braces nest. Also avoid rescanning all accumulated source for every line, which can become quadratic.
+### Alias and reference rules
 
-PlantUML preprocessing can hide backslashes using a Jaws private character. The lexer must restore that representation before interpreting DSL string escapes.
+Aliases are global. Installed registrations use installation-local identities (`request.module1.foo`). An event alias used as a message endpoint must not become a visible lifetime; it is a command adapter only. The custom renderer draws model entities, not native participants invented for parsing.
 
-### Located errors need the right trace
+## 5. Rendering is measured geometry, not decoration
 
-Returning a replacement error diagram through `CommandExecutionResult.newDiagram(...)` permits the standard error surface without changing shared error infrastructure.
+The renderer uses `UGraphic`/`StringBounder` and no Graphviz or AWT. It must measure text before placing any obstacle.
 
-The trace passed to `PSystemErrorUtils.buildV2(...)` must be nonempty and end at the offending original `StringLocated`. Passing the entire composition through its closing brace can report or highlight the wrong line.
+Observed failure modes in earlier renderings:
 
-### EOF errors have a different location contract
+- A boolean "cycle" flag drew a floating arc with no endpoints. Never synthesize a relationship glyph from metadata.
+- Delegate template calls terminated on a runtime track, implying an execution that was never authored.
+- Static references and temporal calls detoured to a global right-hand gutter, so a lookup looked like a later event and inflated diagrams to thousands of pixels. Route locally between real ports: event → parent/child gutter → construction row, or event → object rail, with measured separate channels for opposite references.
+- Every object/participant rail extended to the global horizon, stretching frames and creating empty space. End rails at their last authored use, explicit destruction, or a small open continuation.
+- Message labels sat exactly on a child frame border. Frame borders and phase headings are obstacles.
+- Event labels inherited the marker glyph's bold font. Marker labels use body text; phase headings use heading style.
+- Lifetime creation was drawn as an unexplained crosshair, and destruction as a bare cross. Start the active track at the construction boundary; give lifetime destruction a terminal cap distinct from a failure/object cross.
+- Notes were placed without reserving rail/label space and covered arrows. Notes are measured obstacles.
+- A construction card undercounted its row heights and clipped the last registration. Card height must include titles, all rows, metadata and padding.
+- Group frames occupied rows but did not enclose the child lifetime envelopes they logically surrounded. Their borders must remain readable and must not overwrite scope frames.
+- `Label` must measure Creole using the same resolved font it draws; otherwise line wrapping and collision checks disagree with the output.
 
-The common factory handles finalization errors differently from normal parser errors:
+Object ownership and sharing are distinct: place the object in its owner only when containment is truthful. A pre-owner object uses an explicit ownership leader. A sharing boundary is a reference to the sharing scope, not an ownership move.
 
-- Missing composition and unclosed composition must remain distinct diagnostics.
-- An unclosed composition message includes its actual opener line.
-- Leading comments are not the composition opener. Recording the first nonempty line caused a real bug and now has a regression test.
-- EOF-only structured error positions still follow the common factory. Do not promise that this structured position equals the opener line named in the message.
+## 6. TeaVM and styles
 
-## 5. TeaVM styles have a generated-resource step
-
-Editing `src/main/resources/skin/plantuml.skin` alone is insufficient for TeaVM. `StyleLoader` uses the checked-in `teavm/EmbeddedResources.java` resource there instead of JVM resource loading.
-
-After compiling the existing generator, refresh that resource from the repository root:
+`StyleLoader` in TeaVM uses the checked-in `src/main/java/net/sourceforge/plantuml/teavm/EmbeddedResources.java`, not the JVM resource file. After editing `src/main/resources/skin/plantuml.skin`, regenerate:
 
 ```sh
 java -cp build/classes/java/main net.sourceforge.plantuml.teavm.EmbeddedResourcesGenerator
 ```
 
-Then rebuild **both** JavaScript outputs:
+Then build both JavaScript outputs:
 
 ```sh
 ./gradlew teavm :plantuml-mcp-js:generateJavaScript -Pfast
 ```
 
-The missing embedded-skin refresh initially produced correct shapes but generic grayscale TeaVM colors. Browser inspection exposed it; compilation and shape/geometry checks alone did not.
+`TextBlock.getBackcolor()` returns the skin background so dark-mode canvases are correct. Do not hardcode a second palette in Java.
 
-Also expose the diagram's background through `TextBlock.getBackcolor()` using the skin's background color. The Autofac text block initially left white title/legend text on a transparent canvas in dark mode. Returning the normal skin background corrected the complete browser canvas without changing the shared browser renderer or hardcoding a second palette.
+Use `UGroupType.DATA_UID` for stable SVG IDs. `UGroupType.ID` is ignored by the backend.
 
-## 6. SVG backend conventions matter
+## 7. Vocabulary and obfuscation
 
-- Use native `UGraphic` shapes and the supplied `StringBounder`; do not assemble raw SVG or depend on Graphviz for Autofac layout.
-- Measure text before placing construction, events, connectors and panels. Browser Canvas metrics and deterministic headless metrics are different contexts.
-- Use `UGroupType.DATA_UID` for stable SVG IDs. `UGroupType.ID` is ignored by this backend.
-- Preserve source locations on semantic groups, including warnings tied to unnamed disposal events.
-- Keep cycles finite: one explicit feedback arc rather than recursive expansion.
-- The browser retains its existing 8192-unit pre-scale dimension ceiling. Do not silently truncate oversized diagrams.
+Native Autofac keyword names are registered in `syntax/LanguageDescriptor` so help output and `--obfuscate` preserve them. `Obfuscate.addException` throws if a reserved word also exists in `src/main/resources/net/sourceforge/plantuml/utils/words.txt`.
 
-## 7. Vocabulary registration can break unrelated features
+Adding `confidence` previously broke five full-suite tests for exactly this reason. When adding generic words such as `from`, `name` or `cross`, remove those entries from `words.txt`; do not weaken the collision guard. Run `LanguageDescriptorTest` and the full suite after vocabulary changes.
 
-Adding the Autofac keyword `confidence` caused five failures in the **full** JVM suite even though the narrower diagram tests had passed.
+## 8. Verification is multi-runtime
 
-Root cause: `confidence` was also present in the bundled obfuscation replacement dictionary:
+These are separate checks:
 
-```text
-src/main/resources/net/sourceforge/plantuml/utils/words.txt
-```
-
-`Obfuscate.addException(...)` deliberately rejects that collision. The correct fix was to remove the newly reserved word from the replacement dictionary, not suppress the collision guard. CLI obfuscation and rendering of its output were exercised after the fix.
-
-When adding language vocabulary, check the obfuscation dictionary and run the full existing suite, not only the new diagram's tests.
-
-## 8. Verification needs real compiled runtimes
-
-The following are separate checks:
-
-1. JVM parsing/export.
+1. JVM parsing/export, including actual PNG/SVG inspection.
 2. Compiled headless TeaVM under Node.
-3. Compiled browser TeaVM in an actual browser.
+3. Compiled browser TeaVM in a real browser.
 
-Calling the TeaVM dispatcher on the JVM is not JavaScript runtime proof. A nonempty SVG is also insufficient: an error diagram is valid SVG.
+Calling the TeaVM dispatcher on the JVM is not JavaScript runtime proof. A nonempty SVG is not proof: an error diagram is also valid SVG.
 
-Useful checks performed during this work included:
+Useful checks:
 
-- Expected diagram type, successful export status, visible labels and actual graphical primitives.
-- JVM PNG decoding, dimensions and non-background pixels.
-- Source-located malformed-input diagnostics.
-- Stable semantic groups, labels, primitive geometry and palette between JVM deterministic SVG and headless TeaVM where the metrics match.
-- Actual browser screenshots, light/dark themes, text bounds, larger fonts, title/legend overrides and normal DOM insertion.
-- Mixed Autofac/non-Autofac rendering sequences to exercise cached factory dispatch.
+- expected diagram type, no error diagram, visible labels, real primitives;
+- endpoint geometry: a marker-attached call starts at the marker; returns point toward the caller; reference direction matches the source;
+- semantic groups/IDs and source lines;
+- JVM vs headless TeaVM identity/text consistency for the same input;
+- actual browser screenshots in light and dark themes;
+- repeated Autofac renders interleaved with other diagram types;
+- representative non-Autofac diagrams (class, sequence, state, activity, component, object, deployment, usecase, gantt, mindmap, wbs, timing, json, yaml, ebnf, regex, nwdiag, packet, chart).
 
 Do not compare browser pixel coordinates directly with deterministic headless coordinates.
 
-### Browser harness pitfalls
+## 9. Environment
 
-- Await each browser render callback before submitting another request. The API keeps only the latest pending request; it does not queue every render.
-- In the browser automation environment used here, page script globals and the execution realm used by `page.evaluate` were not always shared. Importing the engine into a realm without `Viz` caused a misleading asynchronous failure for class diagrams.
-- Loading the existing `/viz-global.js` bundle in the same realm as the engine resolved the harness issue. The normal demo UI was checked separately to distinguish a harness failure from an application failure.
-- For headless Node, the existing Viz UMD bundle could be reused without an npm installation. The smoke harness initialized it with Node's `vm.runInThisContext`, `createRequire` and an absolute `__filename`.
+Use the existing Nix environment (`nix shell nixpkgs#zulu21 nixpkgs#graphviz --command ...`). Do not paste `/nix/store` paths into commands or environment variables; derive them inside the shell.
 
-## 9. Nix and build environment observations
+`-Pfast` does not disable an explicitly requested `test` task. Offline test execution may lack the JaCoCo agent; a throwaway init script can disable coverage for that run without changing the repository.
 
-Use the existing Nix environment rather than installing a parallel toolchain.
+## 10. Recorded results
 
-- The existing JDK 17 could run the exercised JVM rendering paths, but could not compile the current OpenPDF 3.0.5 dependency: that dependency contains Java 21 bytecode.
-- An existing Nix JDK 21 was used for builds. New shared Autofac sources were separately compiled with `javac --release 8` against the main classes.
-- The Gradle distribution and build dependencies were already cached.
-- Offline test execution lacked the JaCoCo agent artifact. A throwaway Gradle init script disabled coverage instrumentation only; tests still ran. No permanent build configuration change was made for this.
-- `-Pfast` does **not** disable an explicitly requested `test` task in this fork.
-- Do not run the Ant compile target merely as another check: it deletes `build/`.
+Observed for the generic cutover (2026-10-27):
 
-Native Graphviz was subsequently provisioned through the existing pinned Nix registry, without changing a global profile:
-
-```sh
-nix shell nixpkgs#graphviz --command dot -V
-```
-
-The provisioned version was **12.2.1**. Selecting its executable explicitly through `GRAPHVIZ_DOT` removed uncertainty about which native binary PlantUML used. Nix-store paths are machine-specific; resolve the executable in the shell instead of committing a store hash.
-
-## 10. Recorded verification results and remaining issue
-
-Observed final results from this implementation/compatibility work:
-
-| Check | Recorded result |
+| Check | Observed result |
 |---|---|
-| Full JVM suite, including a forced rerun with native Graphviz selected | 3,079 passed; 10 skipped; 0 failed |
-| Autofac authored runtime scenarios | 22 exercised on JVM and compiled headless TeaVM |
-| Representative non-Autofac JVM renders | 20 diagram types, SVG and PNG passed |
-| Representative non-Autofac headless TeaVM renders | 19 diagram types passed |
-| Representative browser renders | 19 diagram types rendered in light and dark modes; 18 had no detected text clipping |
-| Native Graphviz smoke | Class, state, component, use-case, object and deployment passed SVG and PNG |
+| Full JVM suite | 3,058 passed, 10 skipped, 0 failures; coverage disabled for the offline run |
+| Autofac unit/geometry tests | 22 passed; canonical JUnit XML confirms 6 parser, 8 validator and 8 geometry cases |
+| Vega fixtures | 205 passed, 4 skipped; four Autofac SVG references regenerated after visual inspection |
+| Autofac JVM exports | 25 SVG/PNG pairs rendered without error diagrams; all 16 showcases inspected |
+| Headless TeaVM renders | 46 passed, including interleaved/repeated rendering and a located invalid-reference diagnostic; Autofac SVG IDs and text match JVM exports |
+| Browser TeaVM renders | 44 light and 25 dark; all 25 Autofac cases match visible semantic IDs and normalized text, with no labels outside their SVG viewboxes |
+| Representative non-Autofac JVM exports | 26 SVG/PNG pairs, including six actual Nix Graphviz layouts |
+| Java 8 compatibility | Autofac sources and modified native sequence/style/vocabulary seams compile with `javac --release 8` |
 
-Salt was included in the JVM matrix only. These are representative behavior checks, not proof of every syntax combination or every diagram type supported by PlantUML.
+Browser parity ignores empty lifecycle groups omitted by the JVM SVG writer, normalizes nonbreaking spaces and trailing whitespace on Creole text fragments, and does not compare backend-dependent pixel coordinates. Actual light/dark Autofac screenshots and all 19 other browser diagram surfaces were inspected.
 
-**Unresolved visual finding:** in the browser packet diagram sample, the first `0` tick began at `x = -3.89`, outside the SVG viewBox, and was visibly clipped in both themes. Packet layout was not changed. Whether that issue predates the Autofac work was not established; do not describe it as a confirmed Autofac regression or as fixed.
+The browser packet fixture still clips its leftmost `0` tick, an issue observed before this redesign. Packet rendering was not changed; a successful export is not a claim that this existing visual defect is fixed.
+
+The earlier iterative implementation's results are deliberately not carried forward; its language and renderer no longer exist.
+
+## 11. Generic redesign release preparation
+
+The release targets are npm `@peterder72/plantuml-core@1.2026.7-autofac.2` on dist-tag `autofac` and VS Code prerelease `0.9.0`, with source on `feature/autofac` in both repositories. Publication is pending; the recorded runtime results above do not establish that these packages are available or replace fresh smoke checks of the final packaged artifacts. Leave npm `latest` and `beta` unchanged, do not reuse immutable `1.2026.7-autofac.1`, and do not create Git release tags.
+
+All 16 showcase sources use the generic lifetime/object/event/native-message language. Keep their editable `autofac-examples/*.puml` sources in Git and generated SVG previews local and ignored. This policy does not remove the native Vega SVG regression goldens or the historical `plan/autofac-lifetime-example.svg` visual reference.

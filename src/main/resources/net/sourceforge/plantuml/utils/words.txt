@@ -352,6 +352,7 @@ complimentary
 comprehensive
 conciliate
 conciliatory
+confidence
 confident
 congenial
 congratulate
@@ -402,7 +403,6 @@ credence
 credible
 crisp
 crisper
-cross
 cure
 cushy
 cute
@@ -799,7 +799,6 @@ freshest
 friendliness
 friendly
 frolic
-from
 frugal
 fruitful
 fulfillment
@@ -1242,7 +1241,6 @@ move
 much
 multi
 must
-name
 navigable
 near
 neat

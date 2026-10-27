@@ -8,53 +8,53 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.sourceforge.plantuml.skin.ArrowConfiguration;
 import net.sourceforge.plantuml.text.StringLocated;
 
-/** Authored facts only: this model does not perform container resolution. */
+/** Explicit drawing entities and occurrences. No Autofac execution or inferred outcomes. */
 public final class AutofacModel {
-	public final String title;
-	public final String view;
 	public final List<Node> statements;
 	public final List<Node> timeline;
+	public final List<Node> relations;
 	public final Map<String, Node> scopes;
 	public final Map<String, Node> modules;
-	public final Map<String, Node> events;
 	public final Map<String, Node> objects;
+	public final Map<String, Node> participants;
 	public final Map<String, Node> registrations;
-	public final Map<String, Outcome> outcomes;
+	public final Map<String, Node> events;
+	public final Map<String, Node> entities;
 	public final Map<String, Set<String>> predecessors;
 	public final List<StructuralWarning> warnings;
-	public final Set<String> expanded;
 
-	public AutofacModel(String title, List<Node> statements, Map<String, Outcome> outcomes,
-			Set<String> expanded, String view) {
-		this(title, statements, outcomes, expanded, view, Collections.<String, Node>emptyMap(),
-				Collections.<String, Node>emptyMap(), Collections.<String, Node>emptyMap(),
-				Collections.<String, Node>emptyMap(), Collections.<String, Node>emptyMap(),
-				Collections.<Node>emptyList(), Collections.<String, Set<String>>emptyMap(),
-				Collections.<StructuralWarning>emptyList());
-	}
-
-	public AutofacModel(String title, List<Node> statements, Map<String, Outcome> outcomes,
-			Set<String> expanded, String view, Map<String, Node> scopes, Map<String, Node> modules,
-			Map<String, Node> events, Map<String, Node> objects, Map<String, Node> registrations,
-			List<Node> timeline, Map<String, Set<String>> predecessors, List<StructuralWarning> warnings) {
-		this.title = title;
+	public AutofacModel(List<Node> statements, List<Node> timeline, List<Node> relations,
+			Map<String, Node> scopes, Map<String, Node> modules, Map<String, Node> objects,
+			Map<String, Node> participants, Map<String, Node> registrations,
+			Map<String, Set<String>> predecessors, List<StructuralWarning> warnings) {
 		this.statements = list(statements);
-		this.outcomes = map(outcomes);
-		this.expanded = Collections.unmodifiableSet(new LinkedHashSet<String>(expanded));
-		this.view = view;
+		this.timeline = list(timeline);
+		this.relations = list(relations);
 		this.scopes = map(scopes);
 		this.modules = map(modules);
-		this.events = map(events);
 		this.objects = map(objects);
+		this.participants = map(participants);
 		this.registrations = map(registrations);
-		this.timeline = list(timeline);
-		this.warnings = list(warnings);
-		final Map<String, Set<String>> copied = new LinkedHashMap<String, Set<String>>();
+		final Map<String, Node> occurrences = new LinkedHashMap<String, Node>();
+		for (Node node : timeline)
+			occurrences.put(node.id, node);
+		this.events = map(occurrences);
+		final Map<String, Node> all = new LinkedHashMap<String, Node>();
+		all.putAll(scopes);
+		all.putAll(modules);
+		all.putAll(objects);
+		all.putAll(participants);
+		all.putAll(registrations);
+		all.putAll(occurrences);
+		this.entities = map(all);
+		final Map<String, Set<String>> order = new LinkedHashMap<String, Set<String>>();
 		for (Map.Entry<String, Set<String>> entry : predecessors.entrySet())
-			copied.put(entry.getKey(), Collections.unmodifiableSet(new LinkedHashSet<String>(entry.getValue())));
-		this.predecessors = map(copied);
+			order.put(entry.getKey(), Collections.unmodifiableSet(new LinkedHashSet<String>(entry.getValue())));
+		this.predecessors = map(order);
+		this.warnings = list(warnings);
 	}
 
 	private static <T> List<T> list(List<T> values) {
@@ -72,59 +72,21 @@ public final class AutofacModel {
 		public final List<Node> children;
 		public final StringLocated source;
 		public final int offset;
+		public final ArrowConfiguration arrow;
 
 		public Node(String kind, String id, Map<String, String> attrs, List<Node> children,
-				StringLocated source, int offset) {
+				StringLocated source, int offset, ArrowConfiguration arrow) {
 			this.kind = kind;
 			this.id = id;
 			this.attrs = map(attrs);
 			this.children = list(children);
 			this.source = source;
 			this.offset = offset;
+			this.arrow = arrow;
 		}
 
 		public String get(String key) {
 			return attrs.get(key);
-		}
-
-		public String get(String key, String fallback) {
-			final String value = get(key);
-			return value == null ? fallback : value;
-		}
-	}
-
-	public static final class Outcome {
-		public final String kind;
-		public final String category;
-		public final Map<String, String> facts;
-		public final Map<String, List<String>> paths;
-		public final StringLocated source;
-		public final Map<String, StringLocated> factSources;
-		public final Map<String, Integer> factOffsets;
-
-		public Outcome(String kind, String category, Map<String, String> facts,
-				Map<String, List<String>> paths, StringLocated source) {
-			this(kind, category, facts, paths, source, Collections.<String, StringLocated>emptyMap(),
-					Collections.<String, Integer>emptyMap());
-		}
-
-		public Outcome(String kind, String category, Map<String, String> facts,
-				Map<String, List<String>> paths, StringLocated source,
-				Map<String, StringLocated> factSources, Map<String, Integer> factOffsets) {
-			this.kind = kind;
-			this.category = category;
-			this.facts = map(facts);
-			final Map<String, List<String>> copied = new LinkedHashMap<String, List<String>>();
-			for (Map.Entry<String, List<String>> entry : paths.entrySet())
-				copied.put(entry.getKey(), list(entry.getValue()));
-			this.paths = map(copied);
-			this.source = source;
-			this.factSources = map(factSources);
-			this.factOffsets = map(factOffsets);
-		}
-
-		public String get(String key) {
-			return facts.get(key);
 		}
 
 		public String get(String key, String fallback) {

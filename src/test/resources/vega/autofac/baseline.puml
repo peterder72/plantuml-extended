@@ -3,15 +3,19 @@ output: svg
 expected-description: (Autofac lifetime)
 ---
 @startautofac
-composition "Root and request" {
-  lifetime system root {
-    register clock: IClock -> Clock sharing single
-  }
-  lifetime request from system {
-    register worker: IWorker -> Worker sharing perScope
-  }
-  resolve first: IWorker from request
-  resolve second: IClock from request
-  dispose request
+title Root and request
+
+lifetime "System" as system {
+	register clock: IClock -> Clock sharing single
 }
+create system
+lifetime "Request" as request from system {
+	register worker: IWorker -> Worker sharing perScope
+}
+create request
+
+event first on request : Resolve IWorker
+event second on request : Resolve IClock
+event on request : Dispose request
+destroy request
 @endautofac

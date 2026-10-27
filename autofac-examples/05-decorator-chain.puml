@@ -1,25 +1,36 @@
 @startautofac
-' Registration order and the authored object chain are different views.
-' Later Metrics wraps Logging; these object boxes are not child lifetimes.
-composition "Decorators: outer to inner" {
-	lifetime system root { }
-	lifetime request from system {
-		register checkout: ICheckout -> Checkout sharing perScope ownership scope
-		decorate ICheckout with Logging
-		decorate ICheckout with Metrics
-	}
-	resolve checkout: ICheckout from request
-	expect checkout success {
-		selected request.checkout
-		instance checkoutObj
-		state new
-		activation request
-		sharing request
-		owner request
-		chain Metrics -> Logging -> Checkout
-		message "Authored outer-to-inner object chain"
-	}
-	dispose request
-	expand checkout trace
+title 05 - Ordered declarations and real decorator objects
+
+lifetime "System" as system
+create system
+lifetime "Request" as request from system {
+	register checkout: ICheckout -> Checkout sharing perScope ownership scope
+	decorate ICheckout with Logging
+	decorate ICheckout with Metrics
 }
+create request
+object "core : Checkout" as core ownedBy request
+object "logging : Logging" as logging ownedBy request
+object "metrics : Metrics" as metrics ownedBy request
+
+event checkout on request : Resolve ICheckout
+create core
+create logging
+create metrics
+metrics --> request : returns metrics
+checkout ..> request.checkout
+metrics ..> logging : wraps
+logging ..> core : wraps
+
+request -> metrics : Submit order
+metrics -> logging : Submit order
+logging -> core : Submit order
+core --> logging : receipt
+logging --> metrics : receipt
+metrics --> request : receipt
+
+destroy metrics
+destroy logging
+destroy core
+destroy request
 @endautofac

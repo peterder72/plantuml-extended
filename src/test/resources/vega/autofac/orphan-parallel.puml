@@ -3,22 +3,32 @@ output: svg
 expected-description: (Autofac lifetime)
 ---
 @startautofac
-composition "Independent lifetime ends and partial order" {
-  lifetime system root { }
-  parallel {
-    lifetime requestA from system { }
-    lifetime requestB from system { }
-  }
-  parallel {
-    resolve a: IService from requestA
-    resolve b: IService from requestB
-    resolve c: IClock from requestA
-  }
-  dispose system
-  resolve later: IService from requestA
-  expect later success { instance surviving; state new; owner requestA }
-  dispose requestA
-  dispose requestB
-  expand later
-}
+title Independent lifetime ends and native branches
+
+lifetime "System" as system
+create system
+lifetime "Request A" as requestA from system
+lifetime "Request B" as requestB from system
+
+par Request A
+	create requestA
+	event a on requestA : Resolve IService
+	event c on requestA : Resolve IClock
+else Request B
+	create requestB
+	event b on requestB : Resolve IService
+end
+
+event on system : Dispose system
+destroy system
+object "surviving : Service" as surviving ownedBy requestA
+event later on requestA : Resolve IService after parent disposal
+create surviving
+surviving --> requestA : returns surviving
+
+event on requestA : Dispose request A
+destroy surviving
+destroy requestA
+event on requestB : Dispose request B
+destroy requestB
 @endautofac

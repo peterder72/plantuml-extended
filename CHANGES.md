@@ -1,3 +1,7 @@
+## V1.2026.7 (unreleased)
+  - [Redesign Autofac lifetime composition around authored lifetimes, explicit objects, marker events and native messages](plan/autofac-lifetime-dsl-design.md)
+
+
 ## V1.2026.6 (Jun 8, 2026)
   - [🍵 update standard library with JSON data and _examples_](https://github.com/plantuml/plantuml/commit/4d6e913e4389da30e04f492d2e73de003f3319c6)
   - [🍵 allow `%load_json` on TeaVM](https://github.com/plantuml/plantuml/issues/2724)

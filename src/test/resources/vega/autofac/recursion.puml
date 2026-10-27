@@ -3,21 +3,20 @@ output: svg
 expected-description: (Autofac lifetime)
 ---
 @startautofac
-composition "Declared recursive cross-scope call" {
-  lifetime system root {
-    register risky: IFoo via delegate {
-      call resolve IFoo from request
-    } sharing single
-  }
-  lifetime request from system { }
-  resolve trigger: IFoo from request
-  expect trigger recursion {
-    selected system.risky
-    cycle risky -> request.IFoo -> risky
-    risk stackOverflow
-    confidence uncertain
-  }
-  call resolve again: IFoo from request during trigger
-  view diagnostics
+title Cross-scope factory re-entry
+
+lifetime "System" as system {
+	register risky: IFoo via delegate "ctx => request.Resolve<IFoo>()" sharing single
 }
+create system
+lifetime "Request" as request from system
+create request
+
+event trigger on request : Resolve IFoo
+request -> system : Invoke risky
+loop while the factory re-enters
+	system -> request : Resolve IFoo
+	request -> system : Invoke risky
+end
+trigger ..> system.risky
 @endautofac

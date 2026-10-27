@@ -85,12 +85,14 @@ public class PlantUMLHeadless {
 	 * {
 	 *   "valid": false,
 	 *   "lineCount": 4,
-	 *   "warnings": [],
-	 *   "errorLine": 2,
+	 *   "errorLineNumber": 2,
 	 *   "errorMessage": "...",
-	 *   "errorContext": "the offending source line"
+	 *   "errorLine": "the offending source line"
 	 * }
 	 * </pre>
+	 *
+	 * <p>
+	 * {@code errorLineNumber} is one-based; {@code errorLine} contains source text.
 	 *
 	 * @param source the raw PlantUML source (a single {@code @start.../@end...}
 	 *               diagram)

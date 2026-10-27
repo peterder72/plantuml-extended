@@ -41,3 +41,6 @@ build/
 # other
 tmp
 node_modules/
+
+# Generated Autofac showcase previews (keep Vega regression references tracked)
+/autofac-examples/*.svg

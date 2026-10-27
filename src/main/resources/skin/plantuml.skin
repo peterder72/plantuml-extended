@@ -339,28 +339,12 @@ mindmapDiagram {
 
 autofacDiagram {
 	Shadowing 0
-	FontColor #334155
 	autofacHeading {
 		FontStyle bold
 	}
 	autofacMuted {
 		FontColor #64748B
 		LineColor #94A3B8
-	}
-	autofacChildLifetime {
-		BackgroundColor #FFFFFF
-		LineColor #64748B
-		LineThickness 1.5
-	}
-	autofacChildConstruction {
-		BackgroundColor #E0F2FE
-		LineColor #7CB7D8
-		LineThickness 1.5
-	}
-	autofacDetail {
-		BackgroundColor #F8FAFC
-		LineColor #CBD5E1
-		LineThickness 1
 	}
 	autofacLifetime {
 		BackgroundColor #F8FAFC
@@ -372,31 +356,61 @@ autofacDiagram {
 		LineColor #94A3B8
 		LineThickness 1.5
 	}
-	autofacResolve {
-		BackgroundColor transparent
-		LineColor #047857
+	autofacChildLifetime {
+		BackgroundColor #FFFFFF
+		LineColor #64748B
+		LineThickness 1.5
+	}
+	autofacChildConstruction {
+		BackgroundColor #E0F2FE
+		LineColor #7CB7D8
+		LineThickness 1.5
+	}
+	lifeLine {
+		LineColor #64748B
 		LineThickness 2
 	}
-	autofacFailure {
-		BackgroundColor #FEE2E2
-		LineColor #B91C1C
-		FontColor #B91C1C
+	circle {
+		FontStyle plain
+		BackgroundColor transparent
+		LineColor #0F766E
 		LineThickness 2
 	}
-	autofacDispose {
-		BackgroundColor transparent
+	destroy {
 		LineColor #B45309
 		LineThickness 2
 	}
-	autofacModule {
-		BackgroundColor #CCFBF1
+	object {
+		BackgroundColor transparent
+		LineColor #475569
+		LineThickness 1.5
+	}
+	arrow {
 		LineColor #0F766E
 		LineThickness 1.5
 	}
-	autofacWarning {
+	reference {
+		LineColor #64748B
+		LineThickness 1
+	}
+	group {
+		BackgroundColor #E2E8F0
+		LineColor #64748B
+		LineThickness 1
+	}
+	activationBox {
+		BackgroundColor #CCFBF1
+		LineColor #0F766E
+		LineThickness 1
+	}
+	note {
 		BackgroundColor #FEF3C7
 		LineColor #92400E
-		FontColor #92400E
+		LineThickness 1
+	}
+	autofacModule {
+		BackgroundColor transparent
+		LineColor #0F766E
 		LineThickness 1.5
 	}
 }
@@ -623,22 +637,9 @@ root {
 }
 
 autofacDiagram {
-	FontColor #E2E8F0
 	autofacMuted {
 		FontColor #A8B8CD
 		LineColor #7E90A7
-	}
-	autofacChildLifetime {
-		BackgroundColor #182331
-		LineColor #94A3B8
-	}
-	autofacChildConstruction {
-		BackgroundColor #173B52
-		LineColor #6199BA
-	}
-	autofacDetail {
-		BackgroundColor #202630
-		LineColor #526174
 	}
 	autofacLifetime {
 		BackgroundColor #202630
@@ -648,25 +649,46 @@ autofacDiagram {
 		BackgroundColor #303A49
 		LineColor #94A3B8
 	}
-	autofacResolve {
-		LineColor #6EE7B7
+	autofacChildLifetime {
+		BackgroundColor #182331
+		LineColor #94A3B8
 	}
-	autofacFailure {
-		BackgroundColor #451A1A
-		LineColor #FCA5A5
-		FontColor #FCA5A5
+	autofacChildConstruction {
+		BackgroundColor #173B52
+		LineColor #6199BA
 	}
-	autofacDispose {
+	lifeLine {
+		LineColor #94A3B8
+	}
+	circle {
+		LineColor #5EEAD4
+	}
+	destroy {
 		LineColor #FBBF24
 	}
-	autofacModule {
+	object {
+		LineColor #CBD5E1
+	}
+	arrow {
+		LineColor #5EEAD4
+	}
+	reference {
+		LineColor #A8B8CD
+	}
+	group {
+		BackgroundColor #303A49
+		LineColor #94A3B8
+	}
+	activationBox {
 		BackgroundColor #134E4A
 		LineColor #5EEAD4
 	}
-	autofacWarning {
+	note {
 		BackgroundColor #422D10
 		LineColor #FCD34D
-		FontColor #FCD34D
+	}
+	autofacModule {
+		LineColor #5EEAD4
 	}
 }
 

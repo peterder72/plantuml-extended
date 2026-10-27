@@ -1,8 +1,6 @@
 package net.sourceforge.plantuml.autofac;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -10,463 +8,267 @@ import java.util.Map;
 import java.util.Set;
 
 import net.sourceforge.plantuml.autofac.AutofacModel.Node;
-import net.sourceforge.plantuml.autofac.AutofacModel.Outcome;
 import net.sourceforge.plantuml.autofac.AutofacModel.StructuralWarning;
 
-/** Binds explicit identities and chronology; deliberately never resolves a service. */
+/** Checks authored identity, ancestry and chronology, never container behavior. */
 public final class AutofacValidator {
-	private final AutofacModel model;
-	private final Map<String, Node> scopes = new LinkedHashMap<String, Node>();
-	private final Map<String, Node> modules = new LinkedHashMap<String, Node>();
-	private final Map<String, Node> events = new LinkedHashMap<String, Node>();
-	private final Map<String, Node> objects = new LinkedHashMap<String, Node>();
-	private final Map<String, Node> registrations = new LinkedHashMap<String, Node>();
-	private final Map<String, Node> runtime = new LinkedHashMap<String, Node>();
-	private final Map<String, Set<String>> edges = new LinkedHashMap<String, Set<String>>();
-	private final List<StructuralWarning> warnings = new ArrayList<StructuralWarning>();
-	private final Map<String, String> owned = new LinkedHashMap<String, String>();
-	private final Map<String, Integer> disposals = new LinkedHashMap<String, Integer>();
-	private final Map<Node, Integer> declarationOrder = new LinkedHashMap<Node, Integer>();
-	private final Map<String, String> objectSources = new LinkedHashMap<String, String>();
-	private final Map<String, Integer> eventOrder = new LinkedHashMap<String, Integer>();
-
-	private AutofacValidator(AutofacModel model) {
-		this.model = model;
+	private AutofacValidator() {
 	}
 
 	public static AutofacModel validate(AutofacModel model) throws AutofacParseException {
-		return new AutofacValidator(model).bind();
-	}
-
-	private AutofacParseException error(String message, Node node) {
-		return new AutofacParseException(message, node.source, node.offset);
-	}
-
-	private AutofacParseException factError(String message, Outcome outcome, String fact) {
-		return new AutofacParseException(message,
-				outcome.factSources.containsKey(fact) ? outcome.factSources.get(fact) : outcome.source,
-				outcome.factOffsets.containsKey(fact) ? outcome.factOffsets.get(fact) : 0);
-	}
-
-	private void put(Map<String, Node> map, String id, Node node, String kind) throws AutofacParseException {
-		if (map.containsKey(id))
-			throw error("Duplicate " + kind + " '" + id + "'", node);
-		map.put(id, node);
-	}
-
-	private Node copy(Node node, Map<String, String> attrs, List<Node> children) {
-		return new Node(node.kind, node.id, attrs, children, node.source, node.offset);
-	}
-
-	private boolean operation(Node node) {
-		return Arrays.asList("resolve", "call", "invoke", "evaluate", "dispose").contains(node.kind);
-	}
-
-	private void collect(List<Node> nodes) throws AutofacParseException {
-		for (Node node : nodes) {
-			declarationOrder.put(node, declarationOrder.size());
-			if (node.kind.equals("lifetime"))
-				put(scopes, node.id, node, "lifetime");
-			else if (node.kind.equals("module"))
-				put(modules, node.id, node, "module");
-			else if (node.kind.equals("instance"))
-				put(objects, node.id, node, "instance");
-			else if (operation(node) && node.id != null) {
-				put(events, node.id, node, "event");
-				eventOrder.put(node.id, declarationOrder.get(node));
+		final Set<String> aliases = new LinkedHashSet<String>();
+		for (Map<String, Node> namespace : java.util.Arrays.asList(model.scopes, model.modules, model.objects,
+				model.participants, model.registrations, model.events))
+			for (Node declaration : namespace.values())
+				if (!aliases.add(declaration.id)) fail("Duplicate " + declaration.kind + " '" + declaration.id + "'", declaration);
+		final Map<String, Set<String>> edges = chronology(model);
+		final Map<String, Set<String>> closure = new LinkedHashMap<String, Set<String>>();
+		final Set<String> visiting = new LinkedHashSet<String>();
+		for (Node event : model.timeline)
+			ancestors(event.id, edges, closure, visiting, event);
+		final Map<String, Node> configured = new LinkedHashMap<String, Node>();
+		final Map<String, Node> created = new LinkedHashMap<String, Node>();
+		final Map<String, Node> destroyed = new LinkedHashMap<String, Node>();
+		for (Node event : model.timeline) {
+			if (event.kind.equals("configure")) configured.put(event.get("target"), event);
+			if (event.kind.equals("create")) {
+				final String target = event.get("target");
+				requireTrack(model, target, event);
+				if (created.put(target, event) != null) fail("Duplicate creation '" + target + "'", event);
 			}
-			if (node.kind.equals("parallel"))
-				collect(node.children);
-		}
-	}
-
-	private void requireScope(String id, Node node) throws AutofacParseException {
-		if (!scopes.containsKey(id))
-			throw error("Unknown lifetime '" + id + "'", node);
-	}
-
-	private void edge(String dependent, String prerequisite) {
-		if (dependent != null && prerequisite != null)
-			edges.get(dependent).add(prerequisite);
-	}
-
-	private void addRuntime(Node node) throws AutofacParseException {
-		put(runtime, node.id, node, "event");
-		edges.put(node.id, new LinkedHashSet<String>());
-	}
-
-	/** Sibling branches share the incoming frontier, but never acquire sibling edges. */
-	private Set<String> sequence(List<Node> nodes, Set<String> previous, String parallel) throws AutofacParseException {
-		Set<String> last = new LinkedHashSet<String>(previous);
-		for (Node node : nodes) {
-			if (node.kind.equals("parallel")) {
-				final Set<String> ends = new LinkedHashSet<String>();
-				for (Node child : node.children)
-					ends.addAll(sequence(Collections.singletonList(child), last, node.id));
-				if (!ends.isEmpty())
-					last = ends;
-				continue;
+			if (event.kind.equals("destroy")) {
+				final String target = event.get("target");
+				requireTrack(model, target, event);
+				if (destroyed.put(target, event) != null) fail("Duplicate destruction '" + target + "'", event);
 			}
-			Node event = runtimeNode(node);
-			if (event == null)
-				continue;
-			if (parallel != null) {
-				final Map<String, String> attrs = new LinkedHashMap<String, String>(event.attrs);
-				attrs.put("parallel", parallel);
-				event = copy(event, attrs, event.children);
-			}
-			addRuntime(event);
-			for (String prerequisite : last)
-				edge(event.id, prerequisite);
-			last = new LinkedHashSet<String>();
-			last.add(event.id);
 		}
-		return last;
+		for (Node scope : model.scopes.values()) {
+			final String parent = scope.get("parent");
+			if (parent != null) {
+				requireLifetime(model, parent, scope);
+				checkAncestry(scope, model, new LinkedHashSet<String>());
+			}
+			final String ownedBy = scope.get("ownedBy");
+			if (ownedBy != null) {
+				requireObject(model, ownedBy, scope);
+				final Node acquired = created.get(ownedBy);
+				if (acquired != null) precedes(acquired, configured.get(scope.id), closure, scope);
+				else declarationBefore(model.objects.get(ownedBy), scope, "object '" + ownedBy + "'", "configuration '" + scope.id + "'");
+			}
+			final Node birth = created.get(scope.id);
+			if (birth != null) {
+				precedes(configured.get(scope.id), birth, closure, birth);
+				if (parent != null && model.scopes.containsKey(parent)) {
+					final Node parentBirth = created.get(parent);
+					if (parentBirth == null) fail("Invalid order: creation '" + parent + "' must precede creation '" + scope.id + "'", birth);
+					if (parentBirth != null) precedes(parentBirth, birth, closure, birth);
+				}
+			}
+			for (Node row : scope.children) {
+				if (row.kind.equals("install")) {
+					requireObject(model, row.get("target"), row);
+					if (!model.modules.containsKey(row.get("module"))) fail("Unknown module '" + row.get("module") + "'", row);
+					declarationBefore(model.objects.get(row.get("target")), scope,
+							"object '" + row.get("target") + "'", "installation '" + row.id + "'");
+					final Node objectBirth = created.get(row.get("target"));
+					if (objectBirth != null) precedes(objectBirth, configured.get(scope.id), closure, row);
+				}
+			}
+		}
+		for (Node object : model.objects.values()) {
+			final String owner = object.get("owner");
+			if (owner != null) requireLifetime(model, owner, object);
+			final Node birth = created.get(object.id);
+			if (birth != null) {
+				declarationBefore(object, birth, "object '" + object.id + "'", "creation '" + object.id + "'");
+			}
+		}
+		for (Node registration : model.registrations.values())
+			if (registration.get("activator").equals("instance"))
+				requireObject(model, registration.get("target"), registration);
+		for (Map.Entry<String, Node> end : destroyed.entrySet()) {
+			final Node birth = created.get(end.getKey());
+			if (birth == null && model.scopes.containsKey(end.getKey()))
+				fail("Lifetime '" + end.getKey() + "' was never created", end.getValue());
+			if (birth != null) precedes(birth, end.getValue(), closure, end.getValue());
+		}
+		final List<StructuralWarning> warnings = new ArrayList<StructuralWarning>();
+		for (Node event : model.timeline) {
+			if (event.kind.equals("event")) {
+				final String scope = event.get("scope");
+				if (!model.scopes.containsKey(scope) && !model.participants.containsKey(scope)) fail("Unknown lifetime '" + scope + "'", event);
+				checkUse(scope, event, destroyed, closure, warnings);
+			} else if (event.kind.equals("message")) {
+				for (String end : new String[] { "from", "to" }) {
+					final String endpoint = event.get(end);
+					if (!external(endpoint)) {
+						requireEndpoint(model, endpoint, event);
+						checkUse(track(model, endpoint), event, destroyed, closure, warnings);
+					}
+				}
+			} else if (event.kind.equals("activate") || event.kind.equals("deactivate")) {
+				requireTrack(model, event.get("target"), event);
+				checkUse(event.get("target"), event, destroyed, closure, warnings);
+			} else if (event.kind.equals("note")) {
+				final String targets = event.get("targets", "");
+				for (String endpoint : targets.split(","))
+					if (!endpoint.isEmpty()) requireEntity(model, endpoint.trim(), event);
+			}
+			if (event.kind.equals("destroy")) {
+				final String parent = event.get("target");
+				for (Node child : model.scopes.values()) {
+					if (!isDescendant(child, parent, model)) continue;
+					final Node birth = created.get(child.id);
+					final Node end = destroyed.get(child.id);
+					if (birth != null && before(birth, event, closure) && (end == null || !before(end, event, closure)))
+						warnings.add(new StructuralWarning("undisposedChild", "Lifetime '" + child.id
+								+ "' remains independently open when '" + parent + "' ends", event.id, event.source));
+				}
+			}
+		}
+		for (Node relation : model.relations) {
+			requireEntity(model, relation.get("from"), relation);
+			requireEntity(model, relation.get("to"), relation);
+		}
+		return new AutofacModel(model.statements, model.timeline, model.relations, model.scopes, model.modules,
+				model.objects, model.participants, model.registrations, closure, warnings);
 	}
 
-	private Node runtimeNode(Node node) throws AutofacParseException {
-		final Map<String, String> attrs = new LinkedHashMap<String, String>(node.attrs);
-		if (node.kind.equals("lifetime")) {
-			if (node.get("ownedBy") != null)
-				return null;
-			attrs.put("scope", node.id);
-			return new Node("birth", "birth-" + node.id, attrs, Collections.<Node>emptyList(), node.source, node.offset);
-		}
-		if (!operation(node))
-			return null;
-		if (node.kind.equals("dispose")) {
-			final String target = node.get("target");
-			final boolean scope = scopes.containsKey(target);
-			if (scope && owned.containsKey(target))
-				throw error("Ambiguous disposal target '" + target + "'", node);
-			final String resolved = scope ? target : owned.get(target);
-			if (resolved == null)
-				throw error("Unknown lifetime '" + target + "'", node);
-			attrs.put("scope", resolved);
-			final int count = disposals.containsKey(resolved) ? disposals.get(resolved) + 1 : 1;
-			disposals.put(resolved, count);
-			final String identity = node.id == null ? "dispose-" + resolved + "-" + count : node.id;
-			final Node result = new Node(node.kind, identity, attrs, node.children, node.source, node.offset);
-			if (node.id != null)
-				events.put(node.id, result);
-			return result;
-		}
-		if (node.kind.equals("invoke") || node.kind.equals("evaluate")) {
-			final String target = node.get("target");
-			final boolean object = objects.containsKey(target) || objectSources.containsKey(target);
-			final Node operation = events.get(target);
-			if (operation != null && object)
-				throw error("Ambiguous event/instance '" + target + "'", node);
-			if (operation == null && !object)
-				throw error("Unknown event '" + target + "'", node);
-			if (operation != null && !operation.kind.equals("resolve"))
-				throw error("Invalid deferred target '" + target + "'", node);
-			final Node origin = operation == null ? events.get(objectSources.get(target)) : operation;
-			if (origin != null) {
-				if (eventOrder.get(origin.id) >= declarationOrder.get(node))
-					throw error("Invalid order: " + origin.id + " must precede " + node.id, node);
-				attrs.put("sourceEvent", origin.id);
-				if (attrs.get("scope") == null)
-					attrs.put("scope", origin.get("scope"));
+	private static final class Boundary {
+		final Node start;
+		final Set<String> branchEnds = new LinkedHashSet<String>();
+		Boundary(Node start) { this.start = start; }
+	}
+
+	/** Branches of par/alt share an entry and join, rather than gaining source-order edges. */
+	private static Map<String, Set<String>> chronology(AutofacModel model) throws AutofacParseException {
+		final Map<String, Set<String>> edges = new LinkedHashMap<String, Set<String>>();
+		final List<Boundary> stack = new ArrayList<Boundary>();
+		Set<String> frontier = new LinkedHashSet<String>();
+		Set<String> lastMessageFrontier = new LinkedHashSet<String>();
+		for (Node node : model.timeline) {
+			if (node.kind.equals("groupElse")) {
+				if (stack.isEmpty() || !stack.get(stack.size() - 1).start.id.equals(node.get("group"))) fail("Unexpected 'else' outside group", node);
+				final Boundary boundary = stack.get(stack.size() - 1);
+				boundary.branchEnds.addAll(frontier);
+				frontier = singleton(boundary.start.id);
+			} else if (node.kind.equals("groupEnd")) {
+				if (stack.isEmpty() || !stack.get(stack.size() - 1).start.id.equals(node.get("group"))) fail("Unexpected 'end' outside group", node);
+				frontier.addAll(stack.remove(stack.size() - 1).branchEnds);
 			}
-			if (origin == null && objects.containsKey(target)
-					&& declarationOrder.get(objects.get(target)) >= declarationOrder.get(node))
-				throw error("Invalid order: " + target + " must precede " + node.id, node);
-			if (attrs.get("scope") == null)
-				throw error("Missing origin scope for '" + node.id + "'", node);
+			final Set<String> parents = new LinkedHashSet<String>(frontier);
+			if (node.kind.equals("message") && node.get("parallel", "false").equals("true")) {
+				parents.clear(); parents.addAll(lastMessageFrontier);
+			} else if (node.kind.equals("message")) lastMessageFrontier = new LinkedHashSet<String>(frontier);
+			for (String endpoint : new String[] { node.get("from"), node.get("to") })
+				if (endpoint != null && model.events.containsKey(endpoint)) parents.add(endpoint);
+			edges.put(node.id, parents);
+			if (node.get("parallel", "false").equals("true")) frontier.add(node.id);
+			else frontier = singleton(node.id);
+			if (node.kind.equals("groupStart")) stack.add(new Boundary(node));
 		}
-		if (owned.containsKey(node.id))
-			attrs.put("ownedScope", owned.get(node.id));
-		requireScope(attrs.get("scope"), node);
-		final Node result = copy(node, attrs, node.children);
-		events.put(node.id, result);
+		return edges;
+	}
+
+	private static Set<String> ancestors(String id, Map<String, Set<String>> edges, Map<String, Set<String>> closure,
+			Set<String> visiting, Node source) throws AutofacParseException {
+		if (closure.containsKey(id)) return closure.get(id);
+		if (!visiting.add(id)) fail("Cyclic chronology reference", source);
+		final Set<String> result = new LinkedHashSet<String>();
+		final Set<String> direct = edges.get(id);
+		if (direct != null) for (String parent : direct) {
+			result.add(parent);
+			result.addAll(ancestors(parent, edges, closure, visiting, source));
+		}
+		visiting.remove(id);
+		closure.put(id, result);
 		return result;
 	}
 
-	private AutofacModel bind() throws AutofacParseException {
-		collect(model.statements);
-		validateDescriptions(model.statements);
-		bindScopeTree();
-		discoverObjectSources();
-		sequence(model.statements, Collections.<String>emptySet(), null);
-		bindPrerequisites();
-		bindConstruction();
-		final Map<String, Set<String>> ancestors = new LinkedHashMap<String, Set<String>>();
-		final List<Node> ordered = topologicalOrder(ancestors);
-		validateOutcomes(ancestors);
-		for (Node node : model.statements)
-			if (node.kind.equals("expand") && !events.containsKey(node.id) && !scopes.containsKey(node.id))
-				throw error("Unknown event '" + node.id + "'", node);
-		chronology(ordered, ancestors);
-		return new AutofacModel(model.title, model.statements, model.outcomes, model.expanded, model.view,
-				scopes, modules, events, objects, registrations, ordered, ancestors, warnings);
+	private static void checkAncestry(Node scope, AutofacModel model, Set<String> visiting) throws AutofacParseException {
+		if (!visiting.add(scope.id)) fail("Cyclic lifetime reference", scope);
+		final Node parent = model.scopes.get(scope.get("parent"));
+		if (parent != null) checkAncestry(parent, model, visiting);
+		visiting.remove(scope.id);
 	}
 
-	private void discoverObjectSources() {
-		for (Map.Entry<String, Outcome> entry : model.outcomes.entrySet()) {
-			final String object = entry.getValue().get("instance");
-			final Node source = events.get(entry.getKey());
-			if (object == null || source == null || objects.containsKey(object)
-					|| "reused".equals(entry.getValue().get("state")))
-				continue;
-			final Node previous = events.get(objectSources.get(object));
-			if (previous == null || declarationOrder.get(source) < declarationOrder.get(previous))
-				objectSources.put(object, source.id);
+	private static boolean isDescendant(Node child, String parent, AutofacModel model) {
+		Node current = model.scopes.get(child.get("parent"));
+		while (current != null) {
+			if (current.id.equals(parent)) return true;
+			current = model.scopes.get(current.get("parent"));
 		}
-	}
-	/** An explicitly owned scope is acquired at its relationship event, not a later event. */
-	private String birth(String scope) {
-		final String acquisition = scopes.get(scope).get("ownedBy");
-		return acquisition == null ? "birth-" + scope : acquisition;
+		return false;
 	}
 
-	private void bindScopeTree() throws AutofacParseException {
-		int roots = 0;
-		for (Node scope : scopes.values()) {
-			if (scope.get("parent") == null)
-				roots++;
-			else
-				requireScope(scope.get("parent"), scope);
-			final String alias = scope.get("ownedBy");
-			if (alias == null)
-				continue;
-			final Node source = events.get(alias);
-			if (source == null)
-				throw error("Unknown event '" + alias + "'", scope);
-			if (!source.kind.equals("resolve") || !source.get("service", "").startsWith("Owned<")
-					|| !source.get("scope", "").equals(scope.get("parent")))
-				throw error("Invalid ownedBy binding '" + alias + "'", scope);
-			if (declarationOrder.get(source) >= declarationOrder.get(scope))
-				throw error("Invalid order: " + alias + " must precede " + scope.id, scope);
-			if (owned.containsKey(alias))
-				throw error("Duplicate ownedBy '" + alias + "'", scope);
-			owned.put(alias, scope.id);
-		}
-		if (roots != 1) {
-			final Node node = model.statements.isEmpty() ? null : model.statements.get(0);
-			throw new AutofacParseException("Expected exactly one root lifetime", node == null ? null : node.source,
-					node == null ? 0 : node.offset);
-		}
-		for (Node scope : scopes.values()) {
-			final Set<String> seen = new LinkedHashSet<String>();
-			Node current = scope;
-			while (current != null) {
-				if (!seen.add(current.id))
-					throw error("Cyclic lifetime reference", scope);
-				current = scopes.get(current.get("parent"));
-			}
-		}
+	private static void checkUse(String id, Node event, Map<String, Node> destroyed,
+			Map<String, Set<String>> closure, List<StructuralWarning> warnings) {
+		if (id == null) return;
+		final Node end = destroyed.get(id);
+		if (end != null && before(end, event, closure))
+			warnings.add(new StructuralWarning("disposedScope", "Element '" + id + "' is used after its explicit destruction", event.id, event.source));
 	}
 
-	private void bindPrerequisites() throws AutofacParseException {
-		for (Node node : runtime.values()) {
-			if (node.kind.equals("birth")) {
-				if (node.get("parent") != null)
-					edge(node.id, birth(node.get("parent")));
-			} else if (node.get("during") != null) {
-				if (!events.containsKey(node.get("during")))
-					throw error("Unknown event '" + node.get("during") + "'", node);
-				edge(node.id, node.get("during"));
-			}
-			if (node.get("ownedScope") != null) {
-				final Node child = scopes.get(node.get("ownedScope"));
-				edge(node.id, birth(child.get("parent")));
-			}
-			if (node.get("sourceEvent") != null)
-				edge(node.id, node.get("sourceEvent"));
-		}
+	private static String track(AutofacModel model, String id) {
+		final Node event = model.events.get(id);
+		if (event == null) return id;
+		if (event.kind.equals("event")) return event.get("scope");
+		return event.get("target");
 	}
 
-	private void bindConstruction() throws AutofacParseException {
-		for (Node scope : new ArrayList<Node>(scopes.values())) {
-			final List<Node> bound = new ArrayList<Node>();
-			final Set<String> installs = new LinkedHashSet<String>();
-			for (Node child : scope.children) {
-				if (!child.kind.equals("install")) {
-					bound.add(child);
-					construction(Collections.singletonList(child), scope.id);
-					continue;
-				}
-				final String alias = child.get("target");
-				final Node source = events.get(alias);
-				if (source == null)
-					throw error("Unknown event '" + alias + "'", child);
-				if (!source.kind.equals("resolve"))
-					throw error("Installation requires module resolve '" + alias + "'", child);
-				if (eventOrder.get(alias) >= declarationOrder.get(scope))
-					throw error("Invalid order: " + alias + " must precede " + scope.id, child);
-				final Node module = modules.get(source.get("service"));
-				if (module == null)
-					throw error("Unknown module '" + source.get("service") + "'", child);
-				if (!installs.add(alias))
-					throw error("Duplicate install '" + alias + "'", child);
-				final Outcome outcome = model.outcomes.get(alias);
-				if (outcome != null && !outcome.kind.equals("success"))
-					throw error("Failed module source '" + alias + "' cannot be installed", child);
-				edge(birth(scope.id), alias);
-				final Map<String, String> attrs = new LinkedHashMap<String, String>(child.attrs);
-				attrs.put("resolvedModule", module.id);
-				attrs.put("sourceEvent", alias);
-				bound.add(copy(child, attrs, child.children));
-				construction(module.children, scope.id + "." + alias);
-			}
-			scopes.put(scope.id, copy(scope, scope.attrs, bound));
-		}
-		for (Node module : modules.values())
-			templates(module.children);
+	private static void requireLifetime(AutofacModel model, String id, Node at) throws AutofacParseException {
+		if (!model.scopes.containsKey(id)) fail("Unknown lifetime '" + id + "'", at);
 	}
 
-	private List<Node> topologicalOrder(Map<String, Set<String>> ancestors) throws AutofacParseException {
-		final List<Node> ordered = new ArrayList<Node>();
-		final Set<String> remaining = new LinkedHashSet<String>(runtime.keySet());
-		while (!remaining.isEmpty()) {
-			String next = null;
-			for (String id : remaining)
-				if (ancestors.keySet().containsAll(edges.get(id))) {
-					next = id;
-					break;
-				}
-			if (next == null)
-				throw error("Cyclic chronology reference", runtime.get(remaining.iterator().next()));
-			final Set<String> predecessors = new LinkedHashSet<String>();
-			for (String prerequisite : edges.get(next)) {
-				predecessors.add(prerequisite);
-				predecessors.addAll(ancestors.get(prerequisite));
-			}
-			ancestors.put(next, predecessors);
-			ordered.add(runtime.get(next));
-			remaining.remove(next);
-		}
-		return ordered;
+	private static void requireObject(AutofacModel model, String id, Node at) throws AutofacParseException {
+		if (!model.objects.containsKey(id)) fail("Unknown instance '" + id + "'", at);
 	}
 
-	private void validateDescriptions(List<Node> nodes) throws AutofacParseException {
-		final Set<String> local = new LinkedHashSet<String>();
-		for (Node node : nodes) {
-			if (node.kind.equals("register") || node.kind.equals("depends") || node.kind.equals("dependency")) {
-				final String identity = node.kind.equals("depends") ? node.get("type") : node.id;
-				if (!local.add(node.kind + ":" + identity))
-					throw error("Duplicate " + node.kind + " '" + identity + "'", node);
-			}
-			if (node.kind.equals("register") && "instance".equals(node.get("activator"))
-					&& !objects.containsKey(node.get("target")))
-				throw error("Unknown instance '" + node.get("target") + "'", node);
-			if (Arrays.asList("module", "lifetime", "depends", "parallel").contains(node.kind))
-				validateDescriptions(node.children);
-		}
+	private static void requireTrack(AutofacModel model, String id, Node at) throws AutofacParseException {
+		if (!model.scopes.containsKey(id) && !model.objects.containsKey(id) && !model.participants.containsKey(id))
+			fail("Unknown lifetime '" + id + "'", at);
 	}
 
-	private void construction(List<Node> nodes, String prefix) throws AutofacParseException {
-		for (Node node : nodes) {
-			if (node.kind.equals("register"))
-				put(registrations, prefix + "." + node.id, node, "registration");
-			templates(Collections.singletonList(node));
-		}
+	private static void requireEndpoint(AutofacModel model, String id, Node at) throws AutofacParseException {
+		if (model.scopes.containsKey(id) || model.objects.containsKey(id) || model.participants.containsKey(id)) return;
+		final Node event = model.events.get(id);
+		if (event == null || !event.kind.equals("event")) fail("Unknown event '" + id + "'", at);
+		preexisting(event, at);
 	}
 
-	private void templates(List<Node> nodes) throws AutofacParseException {
-		for (Node node : nodes) {
-			if (node.kind.equals("call") && node.id == null)
-				requireScope(node.get("scope"), node);
-			templates(node.children);
-		}
+	private static void requireEntity(AutofacModel model, String id, Node at) throws AutofacParseException {
+		if (!model.entities.containsKey(id))
+			fail((id.indexOf('.') >= 0 ? "Unknown registration '" : "Unknown entity '") + id + "'", at);
+		preexisting(model.entities.get(id), at);
 	}
 
-	private void validateOutcomes(Map<String, Set<String>> ancestors) throws AutofacParseException {
-		final Map<String, String> creators = new LinkedHashMap<String, String>();
-		for (String id : objects.keySet())
-			creators.put(id, null);
-		// Source order of expectation declarations adds no time.
-		creators.putAll(objectSources);
-		final Set<String> declaredNew = new LinkedHashSet<String>();
-		for (Map.Entry<String, Outcome> entry : model.outcomes.entrySet()) {
-			final Outcome outcome = entry.getValue();
-			final String object = outcome.get("instance");
-			if (object != null && "new".equals(outcome.get("state"))
-					&& (!declaredNew.add(object) || objects.containsKey(object)
-							|| !entry.getKey().equals(creators.get(object))))
-				throw factError("Duplicate instance '" + object + "'", outcome, "instance");
-		}
-		for (Map.Entry<String, Outcome> entry : model.outcomes.entrySet()) {
-			final String target = entry.getKey();
-			final Outcome outcome = entry.getValue();
-			Node node = events.get(target);
-			if (scopes.containsKey(target) && node != null)
-				throw new AutofacParseException("Ambiguous expectation target '" + target + "'", outcome.source, 0);
-			if (node == null)
-				node = scopes.get(target);
-			if (node == null)
-				throw new AutofacParseException("Unknown event '" + target + "'", outcome.source, 0);
-			if (scopes.containsKey(target) && !(outcome.kind.equals("failure") && "scopeCreation".equals(outcome.category)))
-				throw new AutofacParseException("Lifetime expectation must declare scopeCreation failure", outcome.source, 0);
-			final String selected = outcome.get("selected");
-			if (selected != null && !registrations.containsKey(selected))
-				throw factError("Unknown registration '" + selected + "'", outcome, "selected");
-			for (String fact : Arrays.asList("activation", "sharing", "owner")) {
-				final String scope = outcome.get(fact);
-				final boolean reserved = fact.equals("sharing") && "none".equals(scope)
-						|| fact.equals("owner") && "external".equals(scope);
-				if (scope != null && !reserved && !scopes.containsKey(scope))
-					throw factError("Unknown lifetime '" + scope + "'", outcome, fact);
-			}
-			final String object = outcome.get("instance");
-			if (outcome.get("state") != null && object == null)
-				throw factError("State requires an instance fact", outcome, "state");
-			if ("reused".equals(outcome.get("state"))) {
-				if (!creators.containsKey(object))
-					throw factError("Unknown instance '" + object + "'", outcome, "instance");
-				final String creator = creators.get(object);
-				if (creator != null && (ancestors.get(target) == null || !ancestors.get(target).contains(creator)))
-					throw factError("Invalid order: " + creator + " must precede " + target, outcome, "state");
-			}
-			if (object != null && !objects.containsKey(object)) {
-				final Map<String, String> attrs = new LinkedHashMap<String, String>();
-				attrs.put("introducedBy", creators.get(object));
-				objects.put(object, new Node("instance", object, attrs, Collections.<Node>emptyList(), outcome.source, 0));
-			}
-		}
-		for (Node object : objects.values())
-			if (object.get("owner") != null && !object.get("owner").equals("external"))
-				requireScope(object.get("owner"), object);
+	private static void preexisting(Node declaration, Node at) throws AutofacParseException {
+		if (declaration.source.getLocation().getPosition() > at.source.getLocation().getPosition())
+			fail("Invalid order: '" + declaration.id + "' must precede its reference", at);
 	}
 
-	private void warning(String code, String message, Node node) {
-		warnings.add(new StructuralWarning(code, message, node.id, node.source));
+	private static boolean external(String id) { return "@left".equals(id) || "@right".equals(id); }
+	private static Set<String> singleton(String id) {
+		final Set<String> result = new LinkedHashSet<String>(); result.add(id); return result;
 	}
-
-	private void chronology(List<Node> ordered, Map<String, Set<String>> ancestors) throws AutofacParseException {
-		final Map<String, Node> ended = new LinkedHashMap<String, Node>();
-		final Set<String> born = new LinkedHashSet<String>();
-		for (Node node : ordered) {
-			final String scope = node.get("scope");
-			if (node.kind.equals("birth")) {
-				final Outcome creation = model.outcomes.get(scope);
-				if (creation == null || !"scopeCreation".equals(creation.category))
-					born.add(scope);
-				continue;
-			}
-			if (node.get("ownedScope") != null) {
-				final String child = node.get("ownedScope");
-				final Outcome creation = model.outcomes.get(child);
-				if (creation == null || !"scopeCreation".equals(creation.category))
-					born.add(child);
-			}
-			if (!born.contains(scope) || !ancestors.get(node.id).contains(birth(scope)))
-				warning("notCreated", "Lifetime '" + scope + "' is not causally created before this event", node);
-			if (ended.containsKey(scope) && ancestors.get(node.id).contains(ended.get(scope).id))
-				warning("disposedScope", "Event uses disposed lifetime '" + scope + "'", node);
-			if (!node.kind.equals("dispose"))
-				continue;
-			final Outcome outcome = model.outcomes.get(node.id);
-			if (outcome != null && outcome.kind.equals("failure"))
-				continue;
-			if (ended.containsKey(scope))
-				throw error("Duplicate terminal disposal '" + scope + "'", node);
-			ended.put(scope, node);
-			for (String child : born)
-				if (scope.equals(scopes.get(child).get("parent")) && !ended.containsKey(child)
-						&& ancestors.get(node.id).contains(birth(child)))
-					warning("undisposedChild", "Child lifetime '" + child + "' remains open when '" + scope + "' is disposed", node);
-		}
+	private static boolean before(Node prerequisite, Node dependent, Map<String, Set<String>> closure) {
+		return prerequisite != null && dependent != null && closure.containsKey(dependent.id) && closure.get(dependent.id).contains(prerequisite.id);
+	}
+	private static void precedes(Node prerequisite, Node dependent, Map<String, Set<String>> closure, Node at) throws AutofacParseException {
+		if (!before(prerequisite, dependent, closure))
+			fail("Invalid order: " + describe(prerequisite) + " must precede " + describe(dependent), at);
+	}
+	private static String describe(Node node) {
+		if (node == null) return "missing prerequisite";
+		return node.kind + " '" + node.get("target", node.id) + "'";
+	}
+	private static void declarationBefore(Node declaration, Node dependent, String prerequisiteName, String dependentName) throws AutofacParseException {
+		final int declarationLine = declaration.source.getLocation().getPosition();
+		final int dependentLine = dependent.source.getLocation().getPosition();
+		if (declarationLine > dependentLine || declarationLine == dependentLine && declaration.offset >= dependent.offset)
+			fail("Invalid order: " + prerequisiteName + " must precede " + dependentName, dependent);
+	}
+	private static void fail(String message, Node at) throws AutofacParseException {
+		throw new AutofacParseException(message, at.source, at.offset);
 	}
 }

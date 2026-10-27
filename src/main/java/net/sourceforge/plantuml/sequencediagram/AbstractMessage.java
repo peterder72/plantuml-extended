@@ -64,6 +64,10 @@ public abstract class AbstractMessage extends AbstractEvent implements EventWith
 		this.stereotype = stereotype;
 	}
 
+	public final Stereotype getStereotype() {
+		return stereotype;
+	}
+
 	final public Style[] getUsedStyles() {
 		Style style = getStyleSignature().getMergedStyle(styleBuilder);
 		if (style != null && arrowConfiguration.getColor() != null)

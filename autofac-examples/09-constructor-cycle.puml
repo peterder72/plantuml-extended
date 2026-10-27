@@ -1,23 +1,24 @@
 @startautofac
-composition "Constructor cycle: declared activation failure" {
-	' Dependency descriptions do not execute constructors or infer a failure.
-	lifetime system root {
-		register orders: IOrders -> Orders sharing perScope
-		register stock: IStock -> Stock sharing perScope
-		depends Orders { stock: IStock via ctor }
-		depends Stock { orders: IOrders via ctor }
-	}
-	resolve start: IOrders from system
-	' The author declares both the failed activation and its finite cycle.
-	expect start failure constructorCycle {
-		selected system.orders
-		activation system
-		path IOrders -> Orders -> Stock
-		cycle Orders -> Stock -> Orders
-		cause "Constructor dependencies require each other"
-		confidence declared
-	}
-	dispose system
-	view diagnostics
+title 09 - Constructor dependency failure with real endpoints
+
+lifetime "System" as system {
+	register orders: IOrders -> Orders sharing perScope
+	register stock: IStock -> Stock sharing perScope
 }
+create system
+participant "Orders.ctor" as ordersCtor
+participant "Stock.ctor" as stockCtor
+
+event start on system : Resolve IOrders
+system -> ordersCtor : Activate Orders
+ordersCtor -> stockCtor : Requires IStock
+stockCtor -> ordersCtor : Requires IOrders
+ordersCtor --> stockCtor : Construction cannot complete
+stockCtor --> ordersCtor : Dependency failed
+ordersCtor --> system : Activation failed
+event on system marker cross : Constructor dependencies require each other
+start ..> system.orders
+note over ordersCtor, stockCtor : Constructor stages, not completed objects
+
+destroy system
 @endautofac

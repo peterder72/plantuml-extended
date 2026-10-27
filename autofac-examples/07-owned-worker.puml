@@ -1,32 +1,30 @@
 @startautofac
-' Owned<IWorker> alone does not create a diagram scope.
-' ownedBy explicitly binds child birth to acquisition; disposing the alias ends it.
-composition "Owned worker: explicit child lifetime" {
-	lifetime system root { }
-	lifetime request from system {
-		register worker: IWorker -> Worker sharing transient ownership scope
-	}
-	resolve owned: Owned<IWorker> from request
-	expect owned success {
-		instance ownedObj
-		state new
-		activation request
-		sharing none
-		owner external
-		message "Caller controls this owned lifetime"
-	}
-	lifetime workerScope from request ownedBy owned { }
-	resolve worker: IWorker from workerScope
-	expect worker success {
-		selected request.worker
-		instance workerObj
-		state new
-		activation workerScope
-		sharing none
-		owner workerScope
-	}
-	dispose owned
-	dispose request
-	expand worker trace
+title 07 - Caller-controlled Owned worker lifetime
+
+lifetime "System" as system
+create system
+lifetime "Request" as request from system {
+	register worker: IWorker -> Worker sharing transient ownership scope
 }
+create request
+object "owned : Owned<IWorker>" as owned
+
+event acquire on request : Resolve Owned<IWorker>
+create owned
+lifetime "Worker scope" as workerScope from request ownedBy owned
+create workerScope
+object "worker1 : Worker" as worker1 ownedBy workerScope
+request -> workerScope : Resolve IWorker
+create worker1
+worker1 --> owned : returns worker1
+owned --> request : returns owned
+acquire ..> request.worker
+owned ..> worker1 : Value
+
+request -> owned : Dispose owned
+owned -> workerScope : Dispose child lifetime
+destroy worker1
+destroy workerScope
+destroy owned
+destroy request
 @endautofac

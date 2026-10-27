@@ -1,49 +1,45 @@
 @startautofac
-' Origin, selected registration, activation, sharing and owner are distinct facts.
-' The child logger override and root clock reuse are explicitly declared.
-composition "02 - A child override does not move the root singleton" {
-	lifetime system root {
-		register clock: IClock -> SystemClock sharing single
-		register logger: ILogger -> ConsoleLogger sharing single
-	}
-	resolve rootLog: ILogger from system
-	expect rootLog success {
-		selected system.logger
-		instance console
-		state new
-		owner system
-	}
+title 02 - Local override and one root-owned clock
 
-	lifetime request from system {
-		register logger: ILogger -> RequestLogger sharing perScope
-	}
-	resolve localLog: ILogger from request
-	expect localLog success {
-		selected request.logger
-		instance requestLog
-		state new
-		activation request
-		sharing request
-		owner request
-	}
-	resolve clockA: IClock from request
-	expect clockA success {
-		selected system.clock
-		instance sharedClock
-		state new
-		activation system
-		sharing system
-		owner system
-	}
-	resolve clockB: IClock from request
-	expect clockB success {
-		instance sharedClock
-		state reused
-		owner system
-	}
-
-	dispose request
-	expand localLog trace
-	expand clockA trace
+lifetime "System" as system {
+	register clock: IClock -> SystemClock sharing single
+	register logger: ILogger -> ConsoleLogger sharing single
 }
+create system
+object "console : ConsoleLogger" as console ownedBy system
+object "sharedClock : SystemClock" as sharedClock ownedBy system
+
+event rootLog on system : Resolve ILogger
+create console
+console --> system : returns console
+rootLog ..> system.logger
+
+lifetime "Request A" as requestA from system {
+	register logger: ILogger -> RequestLogger sharing perScope
+}
+create requestA
+object "requestLog : RequestLogger" as requestLog ownedBy requestA
+event localLog on requestA : Resolve ILogger
+create requestLog
+requestLog --> requestA : returns requestLog
+localLog ..> requestA.logger
+
+event clockA on requestA : Resolve IClock
+requestA -> system : Activate IClock
+event clockLog on system : Resolve ILogger for clock construction
+console --> system : same console
+clockLog ..> system.logger
+create sharedClock
+sharedClock --> requestA : returns sharedClock
+clockA ..> system.clock
+
+destroy requestLog
+destroy requestA
+
+lifetime "Request B" as requestB from system
+create requestB
+event clockB on requestB : Resolve IClock
+sharedClock --> requestB : returns same sharedClock
+clockB ..> sharedClock : references
+destroy requestB
 @endautofac

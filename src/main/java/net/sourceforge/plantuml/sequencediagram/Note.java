@@ -106,6 +106,10 @@ final public class Note extends AbstractEvent implements Event, SpecificBackcolo
 		this.stereotype = stereotype;
 	}
 
+	public Stereotype getStereotype() {
+		return stereotype;
+	}
+
 	public Note withPosition(NotePosition newPosition) {
 		if (position == newPosition)
 			return this;

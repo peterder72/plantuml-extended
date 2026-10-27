@@ -56,12 +56,7 @@ public enum SName {
 	autofacChildConstruction, //
 	autofacHeading, //
 	autofacMuted, //
-	autofacDetail, //
-	autofacResolve, //
-	autofacFailure, //
-	autofacDispose, //
 	autofacModule, //
-	autofacWarning, //
 	artifact, //
 	binary, //
 	body, //

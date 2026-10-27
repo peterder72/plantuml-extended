@@ -107,7 +107,18 @@ public class SequenceDiagram extends TitledDiagram {
 	}
 
 	public SequenceDiagram(UmlSource source, Previous previous, PreprocessingArtifact preprocessing) {
-		super(source, DiagramType.SEQUENCE, previous, preprocessing);
+		this(source, DiagramType.SEQUENCE, previous, preprocessing);
+	}
+
+	/** Allows sequence-command receivers with their own rendering and diagram type. */
+	protected SequenceDiagram(UmlSource source, DiagramType type, Previous previous,
+			PreprocessingArtifact preprocessing) {
+		super(source, type, previous, preprocessing);
+	}
+
+	/** Append an explicit occurrence without sequence's pending message-creation protocol. */
+	protected final void appendSequenceEvent(Event event) {
+		events.add(event);
 	}
 
 	@Deprecated

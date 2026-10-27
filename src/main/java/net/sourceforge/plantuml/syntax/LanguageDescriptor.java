@@ -139,9 +139,9 @@ public class LanguageDescriptor {
 		type.add("usecase");
 		type.add("packetdiag");
 
-		for (String word : new String[] { "composition", "lifetime", "module", "register", "install", "decorate",
-				"resolve", "depends", "invoke", "evaluate", "dispose", "expect", "sharing", "ownership", "ownedBy",
-				"selected", "activation", "reused", "confidence", "expand", "diagnostics" })
+		for (String word : new String[] { "lifetime", "module", "register", "install", "decorate",
+				"event", "marker", "sharing", "ownership", "ownedBy", "from", "on", "via", "tag",
+				"key", "name", "instance", "delegate", "cross", "square" })
 			keyword.add(word);
 
 		keyword.add("across");
